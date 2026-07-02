@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LND Academy – IELTS Writing Grader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #1e2530;
+      --border: #30363d; --accent: #2563eb; --accent-light: #3b82f6;
+      --gold: #f59e0b; --text: #e6edf3; --muted: #8b949e;
+      --success: #22c55e; --radius: 12px;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px; border-bottom: 1px solid var(--border);
+      background: var(--surface); position: sticky; top: 0; z-index: 10;
+    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--text); letter-spacing: -0.5px; }
+    .logo span { color: var(--gold); }
+    .badge { font-size: 0.7rem; background: var(--accent); color: #fff; padding: 3px 10px; border-radius: 20px; font-weight: 600; letter-spacing: 0.5px; }
+
+    .hero { text-align: center; padding: 64px 24px 48px; max-width: 700px; margin: 0 auto; }
+    .hero-tag { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; margin-bottom: 16px; }
+    .hero p { color: var(--muted); font-size: 1rem; line-height: 1.7; }
+
+    main { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 24px; }
+    .card-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+    .task-toggle { display: flex; gap: 10px; margin-bottom: 24px; }
+    .task-btn {
+      flex: 1; padding: 12px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--surface2); color: var(--muted); font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .task-btn.active { border-color: var(--accent); background: rgba(37,99,235,0.12); color: var(--accent-light); }
+
+    textarea {
+      width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.95rem; line-height: 1.7; padding: 16px; resize: vertical; transition: border-color 0.2s;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+    #promptInput { min-height: 100px; }
+    #essayInput { min-height: 240px; }
+
+    .word-count { font-size: 0.8rem; color: var(--muted); text-align: right; margin-top: 8px; }
+    .word-count.warn { color: var(--gold); }
+
+    /* IMAGE UPLOAD */
+    .upload-zone {
+      border: 1.5px dashed var(--border); border-radius: 8px;
+      padding: 32px; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: var(--surface2); position: relative;
+    }
+    .upload-zone:hover { border-color: var(--accent); background: rgba(37,99,235,0.05); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-text { font-size: 0.85rem; color: var(--muted); }
+    .upload-text strong { color: var(--accent-light); }
+
+    .image-preview { position: relative; margin-top: 12px; }
+    .image-preview img { width: 100%; max-height: 280px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
+    .remove-img {
+      position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7);
+      color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px;
+      cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+    }
+
+    .section-divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+    .submit-btn {
+      width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 16px;
+    }
+    .submit-btn:hover:not(:disabled) { background: var(--accent-light); }
+    .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loading { display: none; text-align: center; padding: 48px 0; color: var(--muted); }
+    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results { display: none; }
+    .overall-band {
+      text-align: center; padding: 32px;
+      background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(245,158,11,0.08));
+      border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px;
+    }
+    .band-label { font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .band-score { font-family: 'Playfair Display', serif; font-size: 5rem; color: var(--gold); line-height: 1; }
+    .band-desc { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+
+    .criteria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 600px) { .criteria-grid { grid-template-columns: 1fr; } }
+
+    .criterion-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .criterion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .criterion-name { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .criterion-score { font-size: 1.6rem; font-weight: 700; color: var(--accent-light); }
+    .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-light)); border-radius: 2px; transition: width 0.8s ease; }
+    .criterion-feedback { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    .overall-feedback-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+    .overall-feedback-card p { font-size: 0.9rem; color: var(--text); line-height: 1.8; }
+
+    .retry-btn {
+      width: 100%; padding: 14px; background: transparent; color: var(--muted);
+      border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .retry-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+
+    .error-msg {
+      display: none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; padding: 16px; color: #f87171; font-size: 0.9rem; margin-top: 16px; text-align: center;
+    }
+
+    .task1-only { display: block; }
+    .task2-only { display: none; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LND <span>Academy</span></div>
+  <span class="badge">AI GRADER</span>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">IELTS Writing Assessment</div>
+  <h1>Get your essay graded in seconds</h1>
+  <p>Powered by AI trained on official IELTS Band Descriptors. Paste your prompt, upload your chart, and receive detailed feedback across all 4 criteria instantly.</p>
+</div>
+
+<main>
+  <div class="card" id="inputSection">
+
+    <!-- TASK TOGGLE -->
+    <div class="card-label">Select task type</div>
+    <div class="task-toggle">
+      <button class="task-btn active" id="task1Btn" onclick="setTask('Task 1')">Task 1 — Report / Chart</button>
+      <button class="task-btn" id="task2Btn" onclick="setTask('Task 2')">Task 2 — Essay</button>
+    </div>
+
+    <!-- PROMPT -->
+    <div class="card-label">Exam question / prompt</div>
+    <textarea id="promptInput" placeholder="Paste the exam question here. e.g. The chart below shows... / Some people think that..."></textarea>
+
+    <!-- TASK 1: IMAGE UPLOAD -->
+    <div class="task1-only" id="imageSection">
+      <div class="section-divider"></div>
+      <div class="card-label">Chart / Graph / Diagram image</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" accept="image/*" id="imageInput" onchange="handleImage(event)" />
+        <div class="upload-icon">📊</div>
+        <div class="upload-text"><strong>Click to upload</strong> or drag and drop your chart image</div>
+        <div class="upload-text" style="margin-top:4px;font-size:0.75rem;">PNG, JPG, WEBP supported</div>
+      </div>
+      <div class="image-preview" id="imagePreview" style="display:none;">
+        <img id="previewImg" src="" alt="Chart preview" />
+        <button class="remove-img" onclick="removeImage()">✕</button>
+      </div>
+    </div>
+
+    <!-- ESSAY -->
+    <div class="section-divider"></div>
+    <div class="card-label">Student's essay</div>
+    <textarea id="essayInput" placeholder="Paste the student's essay here..." oninput="updateWordCount()"></textarea>
+    <div class="word-count" id="wordCount">0 words</div>
+
+    <button class="submit-btn" id="submitBtn" onclick="gradeEssay()">Grade My Essay →</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loadingSection">
+    <div class="spinner"></div>
+    <p>Analyzing your essay...</p>
+    <p style="font-size:0.8rem;margin-top:8px;">This usually takes 10–20 seconds</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="resultsSection">
+    <div class="overall-band">
+      <div class="band-label">Overall Band Score</div>
+      <div class="band-score" id="overallBand">—</div>
+      <div class="band-desc" id="bandDesc"></div>
+    </div>
+    <div class="criteria-grid" id="criteriaGrid"></div>
+    <div class="overall-feedback-card">
+      <div class="card-label" style="margin-bottom:12px">Examiner's Overall Feedback</div>
+      <p id="overallFeedback"></p>
+    </div>
+    <button class="retry-btn" onclick="reset()">← Grade Another Essay</button>
+  </div>
+</main>
+
+<script>
+  const API_URL = "https://YOUR-BACKEND.onrender.com";
+
+  let selectedTask = "Task 1";
+  let imageBase64 = null;
+
+  function setTask(task) {
+    selectedTask = task;
+    document.getElementById("task1Btn").classList.toggle("active", task === "Task 1");
+    document.getElementById("task2Btn").classList.toggle("active", task === "Task 2");
+    document.getElementById("imageSection").style.display = task === "Task 1" ? "block" : "none";
+    updateWordCount();
+  }
+
+  function handleImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imageBase64 = e.target.result.split(",")[1];
+      document.getElementById("previewImg").src = e.target.result;
+      document.getElementById("imagePreview").style.display = "block";
+      document.getElementById("uploadZone").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() {
+    imageBase64 = null;
+    document.getElementById("imageInput").value = "";
+    document.getElementById("imagePreview").style.display = "none";
+    document.getElementById("uploadZone").style.display = "block";
+  }
+
+  function updateWordCount() {
+    const text = document.getElementById("essayInput").value.trim();
+    const count = text ? text.split(/\s+/).length : 0;
+    const el = document.getElementById("wordCount");
+    const min = selectedTask === "Task 1" ? 150 : 250;
+    el.textContent = count + " words " + (count < min ? "(minimum " + min + " recommended)" : "✓");
+    el.className = "word-count" + (count < min && count > 0 ? " warn" : "");
+  }
+
+  function getBandDesc(score) {
+    if (score >= 8.5) return "Expert User";
+    if (score >= 7.5) return "Very Good User";
+    if (score >= 6.5) return "Good User";
+    if (score >= 5.5) return "Competent User";
+    if (score >= 4.5) return "Modest User";
+    return "Limited User";
+  }
+
+  async function gradeEssay() {
+    const essay = document.getElementById("essayInput").value.trim();
+    const prompt = document.getElementById("promptInput").value.trim();
+
+    if (!prompt) { showError("Please enter the exam question/prompt."); return; }
+    if (essay.length < 50) { showError("Please enter a longer essay (at least 50 characters)."); return; }
+    if (selectedTask === "Task 1" && !imageBase64) { showError("Please upload the chart/graph image for Task 1."); return; }
+
+    document.getElementById("inputSection").style.display = "none";
+    document.getElementById("loadingSection").style.display = "block";
+    document.getElementById("errorMsg").style.display = "none";
+
+    try {
+      const body = { essay, prompt, task_type: selectedTask };
+      if (imageBase64) body.image_base64 = imageBase64;
+
+      const res = await fetch(API_URL + "/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Server error");
+      }
+
+      const data = await res.json();
+      showResults(data);
+
+    } catch (e) {
+      document.getElementById("inputSection").style.display = "block";
+      document.getElementById("loadingSection").style.display = "none";
+      showError("Error: " + e.message);
+    }
+  }
+
+  function showResults(data) {
+    document.getElementById("loadingSection").style.display = "none";
+    document.getElementById("resultsSection").style.display = "block";
+
+    document.getElementById("overallBand").textContent = data.overall_band;
+    document.getElementById("bandDesc").textContent = getBandDesc(data.overall_band);
+    document.getElementById("overallFeedback").textContent = data.overall_feedback;
+
+    const criteria = [
+      { name: data.criterion1_name, score: data.criterion1_score, feedback: data.criterion1_feedback },
+      { name: data.criterion2_name, score: data.criterion2_score, feedback: data.criterion2_feedback },
+      { name: data.criterion3_name, score: data.criterion3_score, feedback: data.criterion3_feedback },
+      { name: data.criterion4_name, score: data.criterion4_score, feedback: data.criterion4_feedback },
+    ];
+
+    document.getElementById("criteriaGrid").innerHTML = criteria.map(c =>
+      '<div class="criterion-card">' +
+        '<div class="criterion-header">' +
+          '<span class="criterion-name">' + c.name + '</span>' +
+          '<span class="criterion-score">' + c.score + '</span>' +
+        '</div>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + (c.score/9*100) + '%"></div></div>' +
+        '<div class="criterion-feedback">' + c.feedback + '</div>' +
+      '</div>'
+    ).join("");
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorMsg");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  function reset() {
+    document.getElementById("inputSection").style.display = "block";
+    document.getElementById("resultsSection").style.display = "none";
+    document.getElementById("essayInput").value = "";
+    document.getElementById("promptInput").value = "";
+    document.getElementById("wordCount").textContent = "0 words";
+    removeImage();
+  }
+</script>
+</body>
+</html>
