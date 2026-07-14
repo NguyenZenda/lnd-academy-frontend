@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Thư viện tài liệu – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <div class="side-menu-title">Khám phá LND Academy</div>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag" id="categoryTag">Thư viện tài liệu</div>
+  <h1 id="categoryTitle">Tài liệu</h1>
+  <p id="categoryDesc">Tài liệu do giáo viên LND Academy tổng hợp và cập nhật.</p>
+</div>
+
+<main>
+  <div class="card">
+    <div class="filters">
+      <input type="text" id="filterSubject" placeholder="Lọc theo môn (VD: Toán)" />
+      <input type="text" id="filterGrade" placeholder="Lọc theo lớp (VD: 12)" />
+      <button class="btn btn-ghost" onclick="loadDocuments()">Lọc</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" id="uploadOpenBtn" style="display:none;" onclick="openUploadModal()">+ Đăng tài liệu</button>
+    </div>
+
+    <div class="doc-list" id="docList">
+      <div class="empty-state">Đang tải danh sách tài liệu...</div>
+    </div>
+  </div>
+</main>
+
+<!-- Upload modal (teachers only) -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Đăng tài liệu mới</h3>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="error-msg" id="uploadError"></div>
+    <form id="uploadForm">
+      <label for="docTitle">Tên tài liệu</label>
+      <input type="text" id="docTitle" required />
+
+      <label for="docSubject">Môn học</label>
+      <input type="text" id="docSubject" placeholder="VD: Toán, Ngữ Văn, Tiếng Anh..." />
+
+      <label for="docGrade">Lớp</label>
+      <input type="text" id="docGrade" placeholder="VD: 12" />
+
+      <label for="docFile">File tài liệu</label>
+      <input type="file" id="docFile" required />
+
+      <button type="submit" class="btn btn-primary btn-block" id="uploadSubmitBtn">Đăng tài liệu</button>
+    </form>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const category = params.get("category") || "ielts";
+
+const CATEGORY_META = {
+  ielts: { tag: "Thư viện IELTS", title: "Tài liệu IELTS", desc: "Đề mẫu và tài liệu ôn luyện 4 kỹ năng IELTS." },
+  hsca:  { tag: "Thư viện HSCA", title: "Tài liệu HSCA", desc: "Học liệu dành cho chương trình HSCA." },
+  thpt:  { tag: "Thư viện THPT", title: "Ôn thi THPT", desc: "Đề thi thử và tài liệu ôn tập theo môn, theo lớp." },
+};
+
+function initCategoryHeader() {
+  const meta = CATEGORY_META[category] || CATEGORY_META.ielts;
+  document.getElementById("categoryTag").textContent = meta.tag;
+  document.getElementById("categoryTitle").textContent = meta.title;
+  document.getElementById("categoryDesc").textContent = meta.desc;
+  document.title = meta.title + " – LND Academy";
+}
+
+function initUploadButton() {
+  document.getElementById("uploadOpenBtn").style.display = isTeacher() ? "inline-flex" : "none";
+}
+
+async function loadDocuments() {
+  const listEl = document.getElementById("docList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải danh sách tài liệu...</div>';
+
+  const subject = document.getElementById("filterSubject").value.trim();
+  const grade = document.getElementById("filterGrade").value.trim();
+
+  const url = new URL(API_URL + "/documents");
+  url.searchParams.set("category", category);
+  if (subject) url.searchParams.set("subject", subject);
+  if (grade) url.searchParams.set("grade", grade);
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Không tải được danh sách tài liệu");
+    const docs = await res.json();
+
+    if (!docs.length) {
+      listEl.innerHTML = '<div class="empty-state">Chưa có tài liệu nào trong mục này.</div>';
+      return;
+    }
+
+    listEl.innerHTML = docs.map(d => `
+      <div class="doc-item">
+        <div class="doc-info">
+          <h4>${escapeHtml(d.title)}</h4>
+          <div class="doc-meta">
+            ${d.subject ? `<span class="doc-tag">${escapeHtml(d.subject)}</span>` : ""}
+            ${d.grade ? `<span class="doc-tag">Lớp ${escapeHtml(d.grade)}</span>` : ""}
+            <span>Đăng bởi ${escapeHtml(d.uploader_name || "Giáo viên LND")}</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <a class="btn btn-primary" href="${d.file_url}" target="_blank" rel="noopener">Tải xuống</a>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function openUploadModal() {
+  document.getElementById("uploadModal").style.display = "flex";
+}
+function closeUploadModal() {
+  document.getElementById("uploadModal").style.display = "none";
+}
+
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("uploadSubmitBtn");
+  const errEl = document.getElementById("uploadError");
+  errEl.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Đang tải lên...";
+
+  try {
+    const formData = new FormData();
+    formData.append("category", category);
+    formData.append("title", document.getElementById("docTitle").value.trim());
+    formData.append("subject", document.getElementById("docSubject").value.trim());
+    formData.append("grade", document.getElementById("docGrade").value.trim());
+    formData.append("file", document.getElementById("docFile").files[0]);
+
+    const res = await fetch(API_URL + "/documents/upload", {
+      method: "POST",
+      headers: { ...authHeader() },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Đăng tài liệu thất bại");
+
+    closeUploadModal();
+    document.getElementById("uploadForm").reset();
+    loadDocuments();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Đăng tài liệu";
+  }
+});
+
+initCategoryHeader();
+initUploadButton();
+loadDocuments();
+</script>
+</body>
+</html>
