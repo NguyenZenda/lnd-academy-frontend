@@ -504,6 +504,33 @@ textarea { line-height: 1.7; resize: vertical; }
 }
 .section-breakdown-item strong { color: var(--green-800); font-size: 0.95rem; }
 
+/* ---------- Split-screen resizable exam layout ---------- */
+.split-container {
+  display: flex; align-items: stretch; height: 65vh; min-height: 420px;
+  margin-bottom: 20px; gap: 0;
+}
+.split-pane { overflow-y: auto; min-width: 200px; }
+.split-left { flex: 0 0 50%; }
+.split-right { flex: 1 1 auto; padding-left: 16px; }
+.split-divider {
+  flex: 0 0 8px; cursor: col-resize; background: var(--border); border-radius: 4px;
+  margin: 0 4px; transition: background 0.15s; position: relative;
+}
+.split-divider::after {
+  content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 3px; height: 32px; background: var(--ink-soft); border-radius: 2px; opacity: 0.5;
+}
+.split-divider:hover, .split-divider.dragging { background: var(--green-500); }
+.split-divider:hover::after, .split-divider.dragging::after { opacity: 0.9; background: #fff; }
+body.split-dragging { user-select: none; cursor: col-resize; }
+
+@media (max-width: 860px) {
+  .split-container { flex-direction: column; height: auto; }
+  .split-left { flex: none; height: 45vh; }
+  .split-divider { display: none; }
+  .split-right { padding-left: 0; margin-top: 16px; overflow-y: visible; }
+}
+
 .explain-toggle { background: rgba(90,138,34,0.08); border-color: var(--green-500); color: var(--green-800); }
 .explanation-box {
   margin-top: 10px; padding: 12px 14px; background: var(--paper); border-left: 3px solid var(--green-500);
