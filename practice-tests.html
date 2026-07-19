@@ -34,7 +34,7 @@
 <div class="hero" id="pageHero">
   <div class="hero-tag">Luyện đề</div>
   <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Hãy chọn một đề và nhận ngay kết quả chi tiết khi làm xong.</p>
+  <p id="pageDesc">Hãy chọn một đề để làm và nhận ngay kết quả chi tiết nhé.</p>
 </div>
 
 <main id="mainEl">
@@ -111,6 +111,8 @@ let skillFilter = "reading";
 let currentExamId = null;
 let currentQuestions = [];
 let currentExam = null;
+let currentGroups = [];
+let lastFocusedBlank = null;
 let audioHasPlayed = false;
 let answers = {};
 
@@ -159,6 +161,7 @@ async function openExam(examId) {
 
     currentExam = data.exam;
     currentQuestions = data.questions.sort((a, b) => a.question_number - b.question_number);
+    currentGroups = (data.groups || []).sort((a, b) => a.order_index - b.order_index);
     audioHasPlayed = false;
     answers = {};
 
@@ -241,7 +244,7 @@ function renderPassageAndQuestions() {
         const q = numToQ[num];
         if (q) {
           embeddedNums.add(num);
-          return `<input type="text" class="inline-blank" data-qnum="${num}" placeholder="${num}" oninput="inputChanged('${q.id}', this.value)" />`;
+          return `<input type="text" class="inline-blank" data-qnum="${num}" placeholder="${num}" oninput="inputChanged('${q.id}', this.value)" onfocus="setLastBlank(this)" />`;
         }
       }
       return escapeHtml(part);
@@ -252,9 +255,103 @@ function renderPassageAndQuestions() {
 
   document.getElementById("passageRendered").innerHTML = passageHtml;
 
+  // Render cac "nhom cau hoi" (VD Questions 33-37) truoc, thu thap so cau da nhung vao do
+  const groupsHtml = currentGroups.map(g => renderGroupBlock(g, numToQ, embeddedNums)).join("");
+
   const standalone = currentQuestions.filter(q => !embeddedNums.has(q.question_number));
+  const stGroups = groupStandaloneQuestions(standalone);
   const area = document.getElementById("questionsArea");
-  area.innerHTML = standalone.map(q => `
+  area.innerHTML = groupsHtml + stGroups.map(renderGroup).join("");
+}
+
+function renderGroupBlock(g, numToQ, embeddedNums) {
+  const rawInstr = g.instructions_html || "";
+  const parts = rawInstr.split(/(\[\[\d+\]\])/g);
+  const html = parts.map(part => {
+    const m = part.match(/^\[\[(\d+)\]\]$/);
+    if (m) {
+      const num = parseInt(m[1], 10);
+      const q = numToQ[num];
+      if (q) {
+        embeddedNums.add(num);
+        return `<input type="text" class="inline-blank" data-qnum="${num}" placeholder="${num}" oninput="inputChanged('${q.id}', this.value)" onfocus="setLastBlank(this)" />`;
+      }
+    }
+    return part; // giu nguyen HTML admin da dinh dang (khong escape, vi day la HTML that tu rich-text editor)
+  }).join("");
+
+  const wordBankHtml = (g.word_bank && g.word_bank.length) ? `
+    <div class="word-bank">
+      ${g.word_bank.map(w => `<button type="button" class="word-chip" onclick="fillLastBlank(${JSON.stringify(w)})">${escapeHtml(w)}</button>`).join("")}
+    </div>
+  ` : "";
+
+  return `
+    <div class="card group-block">
+      <div class="card-label">${escapeHtml(g.label || "")}</div>
+      <div class="group-instructions">${html}</div>
+      ${wordBankHtml}
+    </div>
+  `;
+}
+
+function setLastBlank(el) { lastFocusedBlank = el; }
+function fillLastBlank(word) {
+  if (!lastFocusedBlank) return;
+  lastFocusedBlank.value = word;
+  lastFocusedBlank.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function groupStandaloneQuestions(qs) {
+  const groups = [];
+  let i = 0;
+  while (i < qs.length) {
+    const q = qs[i];
+    if (q.question_type === "mcq" && q.options && q.options.length) {
+      const key = JSON.stringify(q.options);
+      let j = i + 1;
+      while (j < qs.length && qs[j].question_type === "mcq" && JSON.stringify(qs[j].options || []) === key) {
+        j++;
+      }
+      if (j - i > 1) {
+        groups.push({ type: "matching_table", questions: qs.slice(i, j), options: q.options });
+        i = j;
+        continue;
+      }
+    }
+    groups.push({ type: "single", question: q });
+    i++;
+  }
+  return groups;
+}
+
+function renderGroup(g) {
+  if (g.type === "matching_table") {
+    const qs = g.questions;
+    const opts = g.options;
+    const first = qs[0].question_number, last = qs[qs.length - 1].question_number;
+    return `
+      <div class="card matching-table-card" id="qcard_group_${first}_${last}">
+        <div class="card-label">Câu ${first}–${last}</div>
+        <div class="matching-table-wrap">
+          <table class="matching-table">
+            <thead><tr><th></th>${opts.map(o => `<th>${escapeHtml(o)}</th>`).join("")}</tr></thead>
+            <tbody>
+              ${qs.map(q => `
+                <tr id="qcard_${q.id}">
+                  <td class="mt-qtext"><span class="q-number-badge">${q.question_number}</span> ${escapeHtml(q.question_text)}</td>
+                  ${opts.map(o => `<td class="mt-radio-cell"><input type="radio" name="q_${q.id}" value="${escapeHtml(o)}" onchange="inputChanged('${q.id}', this.value)" /></td>`).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  const q = g.question;
+  return `
     <div class="card exam-question-card" id="qcard_${q.id}">
       <div class="q-header">
         <span class="q-number-badge">${q.question_number}</span>
@@ -273,8 +370,7 @@ function renderPassageAndQuestions() {
         <input type="text" class="q-short-answer" placeholder="Nhập câu trả lời..." oninput="inputChanged('${q.id}', this.value)" />
       `}
     </div>
-  `).join("");
-}
+  `;
 
 function renderNavPills() {
   const wrap = document.getElementById("examNavPills");
