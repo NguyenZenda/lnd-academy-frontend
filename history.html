@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lịch sử làm bài – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <a href="index.html" class="side-menu-title" onclick="closeMenu()">🏠 Khám phá LND Academy</a>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:5"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:6;display:none;" id="adminMenuItem"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Lịch sử</div>
+  <h1>Lịch sử làm bài của bạn</h1>
+  <p>Xem lại điểm số, band score và các câu đã làm sai ở những lần luyện đề trước.</p>
+</div>
+
+<main>
+  <div id="notLoggedIn" class="card" style="display:none;text-align:center;">
+    <p style="color:var(--ink-soft);">Đăng nhập để xem và lưu lại lịch sử làm bài của bạn.</p>
+    <div style="margin-top:16px;"><a class="btn btn-primary" href="login.html">Đăng nhập</a></div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="card">
+      <div class="card-label">Các lần làm bài gần đây</div>
+      <div id="attemptsList" class="doc-list"><div class="empty-state">Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="detailView" style="display:none;">
+    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToAttemptList()">← Quay lại lịch sử</button>
+
+    <div class="report-header">
+      <div class="report-score-block">
+        <div class="band-label" id="detailExamTitle">Đề thi</div>
+        <div class="band-score" id="detailScoreText" style="font-size:3.2rem;">0/0</div>
+      </div>
+      <div class="report-band-block" id="detailBandBlock">
+        <div class="band-label">Band Score</div>
+        <div class="band-score-big" id="detailBandText">0.0</div>
+        <div class="band-score-note">Quy đổi theo thang điểm IELTS chính thức (40 câu)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Tổng quan bài làm — bấm vào câu để xem chi tiết</div>
+      <div class="result-grid" id="detailGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Xem lại các câu làm sai</div>
+      <div id="detailMistakes"></div>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+const IELTS_BAND_TABLE = [
+  [39, 9.0], [37, 8.5], [35, 8.0], [33, 7.5], [30, 7.0], [27, 6.5], [23, 6.0],
+  [20, 5.5], [16, 5.0], [13, 4.5], [10, 4.0], [7, 3.5], [5, 3.0], [3, 2.5],
+];
+function computeBandScore(score, total) {
+  if (total !== 40) return null;
+  for (const [minCorrect, band] of IELTS_BAND_TABLE) {
+    if (score >= minCorrect) return band;
+  }
+  return null;
+}
+
+function initAccess() {
+  const user = getUser();
+  document.getElementById("notLoggedIn").style.display = user ? "none" : "block";
+  document.getElementById("listView").style.display = user ? "block" : "none";
+  if (user) loadAttempts();
+}
+
+async function loadAttempts() {
+  const listEl = document.getElementById("attemptsList");
+  try {
+    const res = await fetch(API_URL + "/me/exam-attempts", {
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const attempts = await res.json();
+    if (!res.ok) throw new Error(attempts.detail || "Không tải được lịch sử");
+
+    if (!attempts.length) {
+      listEl.innerHTML = '<div class="empty-state">Bạn chưa làm bài luyện đề nào cả. Vào mục "Luyện đề" để bắt đầu.</div>';
+      return;
+    }
+
+    listEl.innerHTML = attempts.map(a => {
+      const exam = a.exams || {};
+      const band = exam.is_full_test !== false ? computeBandScore(a.score, a.total) : null;
+      const date = new Date(a.created_at).toLocaleString("vi-VN");
+      return `
+        <div class="doc-item">
+          <div class="doc-info">
+            <h4>${escapeHtml(exam.title || "Đề thi")}</h4>
+            <div class="doc-meta">
+              <span class="doc-tag">${exam.skill === "reading" ? "Reading" : "Listening"}</span>
+              <span>${date}</span>
+              <span><strong>${a.score}/${a.total}</strong>${band !== null ? ` · Band ${band.toFixed(1)}` : ""}</span>
+            </div>
+          </div>
+          <div class="doc-actions">
+            <button class="btn btn-primary" onclick="viewAttempt('${a.id}')">Xem chi tiết</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function viewAttempt(attemptId) {
+  try {
+    const res = await fetch(API_URL + "/me/exam-attempts/" + attemptId, {
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không tải được chi tiết");
+
+    const exam = data.exams || {};
+    document.getElementById("detailExamTitle").textContent = exam.title || "Đề thi";
+    document.getElementById("detailScoreText").textContent = `${data.score}/${data.total}`;
+
+    const isFullTest = exam.is_full_test !== false;
+    const bandBlock = document.getElementById("detailBandBlock");
+    if (!isFullTest) {
+      bandBlock.style.display = "none";
+    } else {
+      bandBlock.style.display = "block";
+      const band = computeBandScore(data.score, data.total);
+      document.getElementById("detailBandText").textContent = band !== null ? band.toFixed(1) : "—";
+    }
+
+    const results = data.results || [];
+    document.getElementById("detailGrid").innerHTML = results.map(r => `
+      <button type="button" class="result-cell ${r.is_correct ? "correct" : "incorrect"}"
+              onclick="${r.is_correct ? "" : `scrollToDetailMistake('${r.question_id}')`}"
+              title="Câu ${r.question_number}${r.is_correct ? " — đúng" : " — sai, bấm để xem chi tiết"}">
+        ${r.question_number}
+      </button>
+    `).join("");
+
+    const mistakes = results.filter(r => !r.is_correct);
+    const mistakesWrap = document.getElementById("detailMistakes");
+    if (!mistakes.length) {
+      mistakesWrap.innerHTML = '<p style="color:var(--green-700);text-align:center;padding:24px;font-weight:600;">🎉 Không sai câu nào cả!</p>';
+    } else {
+      mistakesWrap.innerHTML = mistakes.map(r => `
+        <div class="mistake-card" id="detail_mistake_${r.question_id}">
+          <div class="criterion-header">
+            <span class="criterion-name">Câu ${r.question_number}${r.section_label ? " · " + escapeHtml(r.section_label) : ""}</span>
+            <span style="font-size:1.1rem;">❌</span>
+          </div>
+          <p style="margin:8px 0 12px;color:var(--ink);">${escapeHtml(r.question_text || "")}</p>
+          <div class="answer-compare">
+            <div class="your-answer-wrong">${escapeHtml(r.your_answer || "(bỏ trống)")}</div>
+            <span class="answer-arrow">→</span>
+            <div class="correct-answer-box">${escapeHtml(r.correct_answer)}</div>
+          </div>
+          ${r.explanation ? `
+            <button class="btn btn-ghost explain-toggle" onclick="toggleDetailExplanation('${r.question_id}')" style="margin-top:12px;font-size:0.8rem;padding:6px 14px;">
+              💡 Xem giải thích
+            </button>
+            <div class="explanation-box" id="detail_explain_${r.question_id}" style="display:none;">${escapeHtml(r.explanation)}</div>
+          ` : ""}
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("listView").style.display = "none";
+    document.getElementById("detailView").style.display = "block";
+    window.scrollTo(0, 0);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function scrollToDetailMistake(qid) {
+  const el = document.getElementById("detail_mistake_" + qid);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("mistake-highlight");
+    setTimeout(() => el.classList.remove("mistake-highlight"), 1200);
+  }
+}
+
+function toggleDetailExplanation(qid) {
+  const box = document.getElementById("detail_explain_" + qid);
+  if (!box) return;
+  box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+function backToAttemptList() {
+  document.getElementById("detailView").style.display = "none";
+  document.getElementById("listView").style.display = "block";
+  window.scrollTo(0, 0);
+}
+
+initAccess();
+</script>
+</body>
+</html>
