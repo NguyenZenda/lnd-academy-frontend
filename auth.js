@@ -28,8 +28,14 @@ function logout() {
 
 function renderNavAuth() {
   const el = document.getElementById("navAuth");
-  if (!el) return;
   const user = getUser();
+
+  const adminMenuItem = document.getElementById("adminMenuItem");
+  if (adminMenuItem) {
+    adminMenuItem.style.display = (user && user.role === "admin") ? "flex" : "none";
+  }
+
+  if (!el) return;
   if (user) {
     const roleLabel = user.role === "teacher" ? "Giáo viên" : (user.role === "admin" ? "Admin" : "Học sinh");
     el.innerHTML =
