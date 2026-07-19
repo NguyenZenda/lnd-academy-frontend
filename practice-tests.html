@@ -34,7 +34,7 @@
 <div class="hero">
   <div class="hero-tag">Luyện đề</div>
   <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Chọn 1 đề để làm thử — có cả câu trắc nghiệm và câu trả lời ngắn, chấm điểm ngay khi nộp bài.</p>
+  <p id="pageDesc">Hãy chọn một đề và nhận kết quả chi tiết ngay khi làm xong.</p>
 </div>
 
 <main>
@@ -72,11 +72,17 @@
       <span id="passageLabel" style="color:var(--ink-soft);font-size:0.85rem;"></span>
     </div>
 
-    <div class="card" id="passageCard">
-      <div id="passageRendered" class="passage-rendered"></div>
+    <div class="split-container" id="splitContainer">
+      <div class="split-pane split-left" id="splitLeft">
+        <div class="card" id="passageCard" style="height:100%;margin-bottom:0;overflow-y:auto;">
+          <div id="passageRendered" class="passage-rendered"></div>
+        </div>
+      </div>
+      <div class="split-divider" id="splitDivider" title="Kéo để đổi tỉ lệ"></div>
+      <div class="split-pane split-right" id="splitRight">
+        <div id="questionsArea"></div>
+      </div>
     </div>
-
-    <div id="questionsArea"></div>
 
     <div class="error-msg" id="submitError"></div>
 
@@ -88,6 +94,7 @@
       </div>
       <div id="sectionBreakdown"></div>
       <div id="resultDetails"></div>
+
     </div>
 
     <div class="exam-navbar" id="examNavbar">
@@ -175,7 +182,7 @@ async function openExam(examId) {
       const audioEl = document.getElementById("examAudioEl");
       audioEl.src = currentExam.audio_url || "";
       audioEl.onended = () => {
-        document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
+        document.getElementById("audioStatusText").textContent = "Đã phát xong, không thể nghe lại.";
       };
     } else {
       audioControl.style.display = "none";
@@ -216,7 +223,8 @@ function inputChanged(qid, value) {
 
 function renderPassageAndQuestions() {
   const passageCard = document.getElementById("passageCard");
-  const rawPassage = (currentExam.skill === "reading") ? (currentExam.passage_text || "") : "";
+  const isReading = currentExam.skill === "reading";
+  const rawPassage = isReading ? (currentExam.passage_text || "") : "";
   const numToQ = {};
   currentQuestions.forEach(q => { numToQ[q.question_number] = q; });
 
@@ -236,9 +244,10 @@ function renderPassageAndQuestions() {
       }
       return escapeHtml(part);
     }).join("");
+  } else if (!isReading) {
+    passageHtml = '<p style="color:var(--ink-soft);text-align:center;padding:40px 20px;">🎧 Nghe kỹ bài audio ở nút "Nghe (1 lần)" phía trên.<br/>Transcript sẽ hiện ra ở đây sau khi bạn nộp bài.</p>';
   }
 
-  passageCard.style.display = rawPassage ? "block" : "none";
   document.getElementById("passageRendered").innerHTML = passageHtml;
 
   const standalone = currentQuestions.filter(q => !embeddedNums.has(q.question_number));
@@ -373,6 +382,47 @@ function backToList() {
   document.getElementById("listView").style.display = "block";
   window.scrollTo(0, 0);
 }
+
+// ---------- Split-pane drag resize ----------
+(function initSplitDrag() {
+  const container = document.getElementById("splitContainer");
+  const divider = document.getElementById("splitDivider");
+  const leftPane = document.getElementById("splitLeft");
+  if (!container || !divider || !leftPane) return;
+
+  let dragging = false;
+
+  function setRatio(clientX) {
+    const rect = container.getBoundingClientRect();
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(20, Math.min(80, pct));
+    leftPane.style.flex = `0 0 ${pct}%`;
+  }
+
+  function startDrag(clientX) {
+    dragging = true;
+    divider.classList.add("dragging");
+    document.body.classList.add("split-dragging");
+    setRatio(clientX);
+  }
+  function moveDrag(clientX) {
+    if (!dragging) return;
+    setRatio(clientX);
+  }
+  function endDrag() {
+    dragging = false;
+    divider.classList.remove("dragging");
+    document.body.classList.remove("split-dragging");
+  }
+
+  divider.addEventListener("mousedown", (e) => { e.preventDefault(); startDrag(e.clientX); });
+  window.addEventListener("mousemove", (e) => moveDrag(e.clientX));
+  window.addEventListener("mouseup", endDrag);
+
+  divider.addEventListener("touchstart", (e) => startDrag(e.touches[0].clientX), { passive: true });
+  window.addEventListener("touchmove", (e) => { if (dragging) moveDrag(e.touches[0].clientX); }, { passive: true });
+  window.addEventListener("touchend", endDrag);
+})();
 
 loadExamList();
 </script>
