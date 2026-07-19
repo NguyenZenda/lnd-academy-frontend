@@ -68,6 +68,16 @@
       <label for="examTitle">Tên đề thi</label>
       <input type="text" id="examTitle" placeholder="VD: IELTS Reading Practice Test 1" />
 
+      <label>Loại đề</label>
+      <div class="task-toggle">
+        <button type="button" class="task-btn active" id="examTypeFullBtn" onclick="setExamType(true)">📋 Full Test (tính Band Score)</button>
+        <button type="button" class="task-btn" id="examTypePracticeBtn" onclick="setExamType(false)">📄 Luyện 1 Passage/Part (không tính Band)</button>
+      </div>
+      <div class="form-note">
+        Full Test: học sinh làm hết các Part, có tính Band Score sau khi nộp (cần đủ 40 câu để band chính xác).
+        Luyện lẻ: chỉ để luyện từng bài riêng — vẫn chấm điểm, hiện câu sai và giải thích như bình thường, chỉ không hiện Band Score.
+      </div>
+
       <label for="docxFile">File .docx (bài đọc/nghe + câu hỏi + đáp án) — bỏ qua nếu đang sửa đề có sẵn</label>
       <input type="file" id="docxFile" accept=".docx" />
 
@@ -144,9 +154,16 @@ let skill = "reading";
 let questions = [];
 let groups = [];
 let parts = [];
+let isFullTest = true;
 let editingExamId = null;
 let currentAudioUrl = null;
 let manageSkill = "reading";
+
+function setExamType(isFull) {
+  isFullTest = isFull;
+  document.getElementById("examTypeFullBtn").classList.toggle("active", isFull);
+  document.getElementById("examTypePracticeBtn").classList.toggle("active", !isFull);
+}
 
 function setSkill(s) {
   skill = s;
@@ -194,7 +211,7 @@ async function loadManageList() {
       <div class="doc-item">
         <div class="doc-info">
           <h4>${escapeHtml(e.title)}</h4>
-          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span></div>
+          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span> <span class="doc-tag" style="background:var(--paper);color:var(--ink-soft);">${e.is_full_test === false ? "Luyện lẻ" : "Full Test"}</span></div>
         </div>
         <div class="doc-actions">
           <button class="btn btn-ghost" onclick="editExam('${e.id}')">Sửa</button>
@@ -218,6 +235,7 @@ async function editExam(examId) {
     editingExamId = examId;
     currentAudioUrl = data.exam.audio_url || null;
     setSkill(data.exam.skill);
+    setExamType(data.exam.is_full_test !== false);
     document.getElementById("examTitle").value = data.exam.title;
     document.getElementById("passageText").innerHTML = data.exam.passage_text || "";
 
@@ -263,6 +281,7 @@ function cancelEdit() {
   questions = [];
   groups = [];
   parts = [];
+  setExamType(true);
   document.getElementById("examTitle").value = "";
   document.getElementById("passageText").innerHTML = "";
   document.getElementById("docxFile").value = "";
@@ -661,6 +680,7 @@ async function saveExam() {
           temp_id: p.temp_id, part_number: p.part_number, title: p.title,
           passage_text: p.passage_text, audio_url: p.audio_url, order_index: p.order_index,
         })),
+        is_full_test: isFullTest,
       }),
     });
     const data = await res.json();
