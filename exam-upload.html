@@ -134,7 +134,7 @@ async function parseExam() {
 
     const res = await fetch(API_URL + "/exams/parse", {
       method: "POST",
-      headers: { ...authHeader() },
+      headers: { ...(await authHeaderAsync()) },
       body: formData,
     });
     const data = await res.json();
@@ -255,7 +255,7 @@ async function saveExam() {
       audioForm.append("file", audioInput.files[0]);
       const audioRes = await fetch(API_URL + "/exams/upload-audio", {
         method: "POST",
-        headers: { ...authHeader() },
+        headers: { ...(await authHeaderAsync()) },
         body: audioForm,
       });
       const audioData = await audioRes.json();
@@ -266,7 +266,7 @@ async function saveExam() {
     btn.textContent = "Đang lưu...";
     const res = await fetch(API_URL + "/exams", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
       body: JSON.stringify({
         title,
         skill,
