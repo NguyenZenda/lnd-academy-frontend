@@ -95,6 +95,14 @@
         <button type="button" onclick="richExec('passageText','fontSize','6')">Lớn</button>
       </div>
       <div id="passageText" class="rte-editable" contenteditable="true" style="min-height:160px"></div>
+      <div class="form-note">
+        ⚠️ Nếu đề thi có <strong>nhiều Part</strong> (VD Part 1/2/3, mỗi phần 1 bài đọc/audio riêng — như đề IELTS thật), dùng phần "Parts" ngay bên dưới thay vì ô Bài đọc ở trên (ô trên sẽ bị bỏ qua nếu có ít nhất 1 Part).
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="card-label">Parts (tuỳ chọn — mỗi Part có bài đọc/audio riêng, học sinh tự chọn làm Part nào trước)</div>
+      <div id="partsList"></div>
+      <button class="btn btn-ghost btn-block" style="margin-bottom:14px;" onclick="addPart()">+ Thêm Part</button>
 
       <div class="section-divider"></div>
       <div class="card-label">Nhóm câu hỏi (VD: "Questions 33-37" — nội dung/hướng dẫn dùng chung, hiện bên cột câu hỏi)</div>
@@ -135,6 +143,7 @@
 let skill = "reading";
 let questions = [];
 let groups = [];
+let parts = [];
 let editingExamId = null;
 let currentAudioUrl = null;
 let manageSkill = "reading";
@@ -144,6 +153,7 @@ function setSkill(s) {
   document.getElementById("skillReadingBtn").classList.toggle("active", s === "reading");
   document.getElementById("skillListeningBtn").classList.toggle("active", s === "listening");
   document.getElementById("audioUploadSection").style.display = s === "listening" ? "block" : "none";
+  renderParts();
 }
 
 function initAccess() {
@@ -211,17 +221,28 @@ async function editExam(examId) {
     document.getElementById("examTitle").value = data.exam.title;
     document.getElementById("passageText").innerHTML = data.exam.passage_text || "";
 
+    parts = (data.parts || []).map(p => ({
+      temp_id: p.id,
+      part_number: p.part_number,
+      title: p.title || `Part ${p.part_number}`,
+      passage_text: p.passage_text || "",
+      audio_url: p.audio_url || null,
+      audioFile: null,
+      order_index: p.order_index || 0,
+    }));
     groups = (data.groups || []).map(g => ({
       temp_id: g.id, // dung luon id that lam temp_id, khong xung dot
       label: g.label || "",
       instructions_html: g.instructions_html || "",
       word_bank: g.word_bank || [],
       order_index: g.order_index || 0,
+      part_ref: g.part_id || null,
     }));
     questions = (data.questions || [])
       .sort((a, b) => a.question_number - b.question_number)
-      .map(q => ({ ...q, group_ref: q.group_id || null }));
+      .map(q => ({ ...q, group_ref: q.group_id || null, part_ref: q.part_id || null }));
 
+    renderParts();
     renderGroups();
     renderQuestions();
 
@@ -241,6 +262,7 @@ function cancelEdit() {
   currentAudioUrl = null;
   questions = [];
   groups = [];
+  parts = [];
   document.getElementById("examTitle").value = "";
   document.getElementById("passageText").innerHTML = "";
   document.getElementById("docxFile").value = "";
@@ -249,6 +271,7 @@ function cancelEdit() {
   document.getElementById("saveBtn").textContent = "Lưu đề thi →";
   document.getElementById("reviewCard").style.display = "none";
   document.getElementById("cancelEditBtn").style.display = "none";
+  renderParts();
   renderGroups();
 }
 
@@ -329,6 +352,13 @@ function renderQuestions() {
         <option value="">— Không thuộc nhóm nào —</option>
         ${groups.map(g => `<option value="${g.temp_id}" ${q.group_ref === g.temp_id ? "selected" : ""}>${escapeHtml(g.label || "(chưa đặt tên)")}</option>`).join("")}
       </select>
+      ${parts.length ? `
+        <label>Thuộc Part nào</label>
+        <select onchange="updateQuestion(${i}, 'part_ref', this.value || null)">
+          <option value="">— Không thuộc Part nào —</option>
+          ${parts.map(p => `<option value="${p.temp_id}" ${q.part_ref === p.temp_id ? "selected" : ""}>${escapeHtml(p.title || "Part " + p.part_number)}</option>`).join("")}
+        </select>
+      ` : ""}
       <label>Nhãn phần (tuỳ chọn — để thống kê điểm theo từng phần, VD: "Part 1", "Passage 2")</label>
       <input type="text" value="${escapeHtml(q.section_label || "")}" onchange="updateQuestion(${i}, 'section_label', this.value)" />
       <label>Loại câu hỏi</label>
@@ -366,7 +396,7 @@ function addQuestion() {
   const nextNum = questions.length ? Math.max(...questions.map(q => q.question_number)) + 1 : 1;
   questions.push({
     question_number: nextNum, question_type: "short_answer", question_text: "",
-    options: null, correct_answer: "", explanation: "", section_label: "", group_ref: null,
+    options: null, correct_answer: "", explanation: "", section_label: "", group_ref: null, part_ref: null,
   });
   renderQuestions();
 }
@@ -378,10 +408,73 @@ function richExec(targetId, cmd, val) {
   document.execCommand(cmd, false, val || null);
 }
 
+// ---------- Parts (Part 1/2/3) ----------
+function addPart() {
+  const tempId = "p_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  const nextNum = parts.length ? Math.max(...parts.map(p => p.part_number)) + 1 : 1;
+  parts.push({
+    temp_id: tempId, part_number: nextNum, title: `Part ${nextNum}`,
+    passage_text: "", audio_url: null, audioFile: null, order_index: parts.length,
+  });
+  renderParts();
+  renderGroups();
+  renderQuestions();
+}
+
+function removePart(tempId) {
+  if (!confirm("Xoá Part này? Các nhóm/câu hỏi đang thuộc Part sẽ chuyển về 'Không thuộc Part nào'.")) return;
+  parts = parts.filter(p => p.temp_id !== tempId);
+  groups.forEach(g => { if (g.part_ref === tempId) g.part_ref = null; });
+  questions.forEach(q => { if (q.part_ref === tempId) q.part_ref = null; });
+  renderParts();
+  renderGroups();
+  renderQuestions();
+}
+
+function updatePartField(tempId, field, value) {
+  const p = parts.find(p => p.temp_id === tempId);
+  if (p) p[field] = value;
+  if (field === "title") { renderGroups(); renderQuestions(); }
+}
+
+function updatePartAudioFile(tempId, fileInput) {
+  const p = parts.find(p => p.temp_id === tempId);
+  if (p) p.audioFile = fileInput.files[0] || null;
+}
+
+function renderParts() {
+  const list = document.getElementById("partsList");
+  list.innerHTML = parts.map(p => `
+    <div class="card" style="background:var(--paper);margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <strong>Part ${p.part_number}</strong>
+        <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removePart('${p.temp_id}')">Xoá Part</button>
+      </div>
+      <label>Tên hiển thị</label>
+      <input type="text" value="${escapeHtml(p.title || "")}" onchange="updatePartField('${p.temp_id}', 'title', this.value)" />
+      <label>Bài đọc / Transcript của Part này</label>
+      <div class="rte-toolbar">
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','bold')"><b>B</b></button>
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','italic')"><i>I</i></button>
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','underline')"><u>U</u></button>
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','fontSize','2')">Nhỏ</button>
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','fontSize','4')">Vừa</button>
+        <button type="button" onclick="richExec('part_passage_${p.temp_id}','fontSize','6')">Lớn</button>
+      </div>
+      <div id="part_passage_${p.temp_id}" class="rte-editable" contenteditable="true"
+           style="min-height:140px" oninput="updatePartField('${p.temp_id}', 'passage_text', this.innerHTML)">${p.passage_text || ""}</div>
+      ${skill === "listening" ? `
+        <label>File âm thanh riêng cho Part này (.mp3/.wav/.m4a)${p.audio_url ? " — đã có audio, chọn file mới nếu muốn thay" : ""}</label>
+        <input type="file" accept="audio/*" onchange="updatePartAudioFile('${p.temp_id}', this)" />
+      ` : ""}
+    </div>
+  `).join("");
+}
+
 // ---------- Question groups ----------
 function addGroup() {
   const tempId = "g_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-  groups.push({ temp_id: tempId, label: "", instructions_html: "", word_bank: [], order_index: groups.length });
+  groups.push({ temp_id: tempId, label: "", instructions_html: "", word_bank: [], order_index: groups.length, part_ref: null });
   renderGroups();
   renderQuestions(); // cap nhat dropdown "Thuoc nhom" cho cac cau da co
 }
@@ -400,6 +493,11 @@ function updateGroupLabel(tempId, value) {
   renderQuestions(); // cap nhat lai ten hien trong dropdown
 }
 
+function updateGroupPart(tempId, partRef) {
+  const g = groups.find(g => g.temp_id === tempId);
+  if (g) g.part_ref = partRef;
+}
+
 function updateGroupWordBank(tempId, value) {
   const g = groups.find(g => g.temp_id === tempId);
   if (g) g.word_bank = value.split("\n").map(s => s.trim()).filter(Boolean);
@@ -415,6 +513,13 @@ function renderGroups() {
       </div>
       <label>Tên nhóm (VD: "Questions 33-37")</label>
       <input type="text" value="${escapeHtml(g.label)}" onchange="updateGroupLabel('${g.temp_id}', this.value)" />
+      ${parts.length ? `
+        <label>Thuộc Part nào</label>
+        <select onchange="updateGroupPart('${g.temp_id}', this.value || null)">
+          <option value="">— Không thuộc Part nào —</option>
+          ${parts.map(p => `<option value="${p.temp_id}" ${g.part_ref === p.temp_id ? "selected" : ""}>${escapeHtml(p.title || "Part " + p.part_number)}</option>`).join("")}
+        </select>
+      ` : ""}
       <label>Nội dung / hướng dẫn (dùng [[số câu]] để chèn ô điền)</label>
       <div class="rte-toolbar">
         <button type="button" onclick="richExec('group_instr_${g.temp_id}','bold')"><b>B</b></button>
@@ -497,7 +602,7 @@ async function saveExam() {
   }
 
   const audioInput = document.getElementById("audioFile");
-  if (skill === "listening" && !audioInput.files[0] && !editingExamId) {
+  if (skill === "listening" && parts.length === 0 && !audioInput.files[0] && !editingExamId) {
     const proceedNoAudio = confirm("Chưa chọn file âm thanh cho đề Listening. Vẫn lưu đề mà không có audio?");
     if (!proceedNoAudio) return;
   }
@@ -522,6 +627,23 @@ async function saveExam() {
       audioUrl = audioData.audio_url;
     }
 
+    // Upload audio rieng cho tung Part (neu co chon file moi)
+    for (const p of parts) {
+      if (p.audioFile) {
+        btn.textContent = `Đang tải audio cho ${p.title || "Part " + p.part_number}...`;
+        const pForm = new FormData();
+        pForm.append("file", p.audioFile);
+        const pRes = await fetch(API_URL + "/exams/upload-audio", {
+          method: "POST",
+          headers: { ...(await authHeaderAsync()) },
+          body: pForm,
+        });
+        const pData = await pRes.json();
+        if (!pRes.ok) throw new Error(pData.detail || `Upload audio ${p.title} thất bại`);
+        p.audio_url = pData.audio_url;
+      }
+    }
+
     btn.textContent = isEditing ? "Đang cập nhật..." : "Đang lưu...";
     const url = isEditing ? (API_URL + "/exams/" + editingExamId) : (API_URL + "/exams");
     const method = isEditing ? "PUT" : "POST";
@@ -535,6 +657,10 @@ async function saveExam() {
         audio_url: audioUrl,
         questions,
         groups,
+        parts: parts.map(p => ({
+          temp_id: p.temp_id, part_number: p.part_number, title: p.title,
+          passage_text: p.passage_text, audio_url: p.audio_url, order_index: p.order_index,
+        })),
       }),
     });
     const data = await res.json();
