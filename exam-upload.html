@@ -79,7 +79,21 @@
 
       <div id="questionsList"></div>
 
-      <button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="addQuestion()">+ Thêm câu hỏi</button>
+      <div class="card" style="background:var(--paper);margin-bottom:14px;">
+        <label>Tạo hàng loạt (VD: nhóm câu 1-7 cùng loại, dùng chung nhãn phần)</label>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <input type="number" id="bulkFrom" placeholder="Từ câu số" style="max-width:110px;" />
+          <input type="number" id="bulkTo" placeholder="Đến câu số" style="max-width:110px;" />
+          <select id="bulkType" style="max-width:180px;">
+            <option value="short_answer">Trả lời ngắn</option>
+            <option value="mcq">Trắc nghiệm (MCQ)</option>
+          </select>
+          <input type="text" id="bulkSection" placeholder="Nhãn phần (tuỳ chọn)" style="flex:1;" />
+        </div>
+        <button class="btn btn-primary btn-block" onclick="addBulkQuestions()">Tạo hàng loạt →</button>
+      </div>
+
+      <button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="addQuestion()">+ Thêm 1 câu hỏi</button>
       <button class="btn btn-primary btn-block" id="saveBtn" onclick="saveExam()">Lưu đề thi →</button>
       <div class="error-msg" id="saveError"></div>
       <div class="success-msg" id="saveSuccess"></div>
@@ -176,7 +190,7 @@ function renderQuestions() {
         <option value="mcq" ${q.question_type === "mcq" ? "selected" : ""}>Trắc nghiệm (MCQ)</option>
         <option value="short_answer" ${q.question_type === "short_answer" ? "selected" : ""}>Trả lời ngắn</option>
       </select>
-      <label>Nội dung câu hỏi</label>
+      <label>Nội dung câu hỏi <span style="font-weight:400;color:var(--ink-soft);font-size:0.78rem;">(chỉ hiện cho học sinh nếu câu này KHÔNG dùng cú pháp [[số câu]] trong đoạn văn — nếu đã nhúng vào bài đọc, để ngắn gọn tuỳ ý)</span></label>
       <textarea style="min-height:60px" onchange="updateQuestion(${i}, 'question_text', this.value)">${escapeHtml(q.question_text)}</textarea>
       ${q.question_type === "mcq" ? `
         <label>Các lựa chọn (mỗi dòng 1 lựa chọn)</label>
@@ -208,6 +222,38 @@ function addQuestion() {
     question_number: nextNum, question_type: "short_answer", question_text: "",
     options: null, correct_answer: "", explanation: "", section_label: "",
   });
+  renderQuestions();
+}
+
+function addBulkQuestions() {
+  const from = parseInt(document.getElementById("bulkFrom").value, 10);
+  const to = parseInt(document.getElementById("bulkTo").value, 10);
+  const type = document.getElementById("bulkType").value;
+  const section = document.getElementById("bulkSection").value.trim();
+
+  if (!from || !to || to < from) {
+    alert("Nhập đúng khoảng số câu (VD: từ 1 đến 7).");
+    return;
+  }
+  if (to - from > 60) {
+    alert("Khoảng câu quá lớn, kiểm tra lại số bạn nhập.");
+    return;
+  }
+
+  const existingNums = new Set(questions.map(q => q.question_number));
+  for (let n = from; n <= to; n++) {
+    if (existingNums.has(n)) continue; // khong ghi de cau da co san
+    questions.push({
+      question_number: n,
+      question_type: type,
+      question_text: type === "mcq" ? "" : `Câu ${n}`,
+      options: type === "mcq" ? [] : null,
+      correct_answer: "",
+      explanation: "",
+      section_label: section,
+    });
+  }
+  questions.sort((a, b) => a.question_number - b.question_number);
   renderQuestions();
 }
 
