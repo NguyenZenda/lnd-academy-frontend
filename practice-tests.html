@@ -31,13 +31,13 @@
   <a class="side-menu-item" href="exam-upload.html" style="--d:5;display:none;" id="adminMenuItem"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
 </aside>
 
-<div class="hero">
+<div class="hero" id="pageHero">
   <div class="hero-tag">Luyện đề</div>
   <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Hãy chọn một đề và nhận kết quả chi tiết ngay khi làm xong.</p>
+  <p id="pageDesc">Hãy chọn một đề và nhận ngay kết quả chi tiết khi làm xong.</p>
 </div>
 
-<main>
+<main id="mainEl">
   <!-- LIST VIEW -->
   <div id="listView">
     <div class="card">
@@ -182,7 +182,7 @@ async function openExam(examId) {
       const audioEl = document.getElementById("examAudioEl");
       audioEl.src = currentExam.audio_url || "";
       audioEl.onended = () => {
-        document.getElementById("audioStatusText").textContent = "Đã phát xong, không thể nghe lại.";
+        document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
       };
     } else {
       audioControl.style.display = "none";
@@ -196,6 +196,8 @@ async function openExam(examId) {
     document.getElementById("examNavbar").style.display = "flex";
     document.getElementById("listView").style.display = "none";
     document.getElementById("takeView").style.display = "block";
+    document.getElementById("pageHero").style.display = "none";
+    document.getElementById("mainEl").classList.add("exam-mode");
     window.scrollTo(0, 0);
   } catch (e) {
     alert(e.message);
@@ -380,6 +382,8 @@ function backToList() {
   audioEl.src = "";
   document.getElementById("takeView").style.display = "none";
   document.getElementById("listView").style.display = "block";
+  document.getElementById("pageHero").style.display = "block";
+  document.getElementById("mainEl").classList.remove("exam-mode");
   window.scrollTo(0, 0);
 }
 
