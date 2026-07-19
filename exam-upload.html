@@ -34,7 +34,7 @@
 <div class="hero">
   <div class="hero-tag">Admin</div>
   <h1>Tạo đề thi thủ công</h1>
-  <p> </p>
+  <p>Upload file .docx để lấy nhanh nội dung bài đọc/bài nghe vào ô bên dưới (không dùng AI đoán câu hỏi) — bạn tự thêm từng câu hỏi và đáp án đúng.</p>
 </div>
 
 <main>
@@ -86,7 +86,23 @@
       <div class="form-note">
         Muốn ô điền từ nằm ngay trong đoạn văn (giống YouPass) thay vì hiện riêng bên dưới: gõ <code>[[số câu]]</code> ngay tại chỗ cần điền, ví dụ: <code>the age group that eat most fat is [[31]]</code>. Câu nào không dùng cú pháp này sẽ tự hiện thành 1 câu hỏi riêng ở danh sách bên dưới.
       </div>
-      <textarea id="passageText" style="min-height:160px"></textarea>
+      <div class="rte-toolbar">
+        <button type="button" onclick="richExec('passageText','bold')"><b>B</b></button>
+        <button type="button" onclick="richExec('passageText','italic')"><i>I</i></button>
+        <button type="button" onclick="richExec('passageText','underline')"><u>U</u></button>
+        <button type="button" onclick="richExec('passageText','fontSize','2')">Nhỏ</button>
+        <button type="button" onclick="richExec('passageText','fontSize','4')">Vừa</button>
+        <button type="button" onclick="richExec('passageText','fontSize','6')">Lớn</button>
+      </div>
+      <div id="passageText" class="rte-editable" contenteditable="true" style="min-height:160px"></div>
+
+      <div class="section-divider"></div>
+      <div class="card-label">Nhóm câu hỏi (VD: "Questions 33-37" — nội dung/hướng dẫn dùng chung, hiện bên cột câu hỏi)</div>
+      <div class="form-note">
+        Dùng cho dạng bài có 1 đoạn hướng dẫn/tóm tắt chung cho nhiều câu (kiểu "Complete the summary using the list of phrases"). Gõ <code>[[số câu]]</code> trong ô nội dung để chèn ô điền. Nếu điền thêm "Danh sách gợi ý" bên dưới, học sinh sẽ <strong>chọn</strong> đáp án từ danh sách đó thay vì gõ tay.
+      </div>
+      <div id="groupsList"></div>
+      <button class="btn btn-ghost btn-block" style="margin-bottom:14px;" onclick="addGroup()">+ Thêm nhóm câu hỏi</button>
 
       <div id="questionsList"></div>
 
@@ -118,6 +134,7 @@
 <script>
 let skill = "reading";
 let questions = [];
+let groups = [];
 let editingExamId = null;
 let currentAudioUrl = null;
 let manageSkill = "reading";
@@ -192,8 +209,20 @@ async function editExam(examId) {
     currentAudioUrl = data.exam.audio_url || null;
     setSkill(data.exam.skill);
     document.getElementById("examTitle").value = data.exam.title;
-    document.getElementById("passageText").value = data.exam.passage_text || "";
-    questions = (data.questions || []).sort((a, b) => a.question_number - b.question_number);
+    document.getElementById("passageText").innerHTML = data.exam.passage_text || "";
+
+    groups = (data.groups || []).map(g => ({
+      temp_id: g.id, // dung luon id that lam temp_id, khong xung dot
+      label: g.label || "",
+      instructions_html: g.instructions_html || "",
+      word_bank: g.word_bank || [],
+      order_index: g.order_index || 0,
+    }));
+    questions = (data.questions || [])
+      .sort((a, b) => a.question_number - b.question_number)
+      .map(q => ({ ...q, group_ref: q.group_id || null }));
+
+    renderGroups();
     renderQuestions();
 
     document.getElementById("createSectionLabel").textContent = `Đang sửa: ${data.exam.title}`;
@@ -211,14 +240,16 @@ function cancelEdit() {
   editingExamId = null;
   currentAudioUrl = null;
   questions = [];
+  groups = [];
   document.getElementById("examTitle").value = "";
-  document.getElementById("passageText").value = "";
+  document.getElementById("passageText").innerHTML = "";
   document.getElementById("docxFile").value = "";
   document.getElementById("createSectionLabel").textContent = "Tạo đề mới";
   document.getElementById("reviewCardLabel").textContent = "Kiểm tra & chỉnh sửa trước khi lưu";
   document.getElementById("saveBtn").textContent = "Lưu đề thi →";
   document.getElementById("reviewCard").style.display = "none";
   document.getElementById("cancelEditBtn").style.display = "none";
+  renderGroups();
 }
 
 async function deleteExamPrompt(examId, title) {
@@ -264,7 +295,7 @@ async function parseExam() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Phân tích thất bại");
 
-    document.getElementById("passageText").value = data.passage_text || "";
+    document.getElementById("passageText").innerHTML = data.passage_text || "";
     questions = (data.questions || []).map(q => ({
       question_number: q.question_number,
       question_type: q.question_type,
@@ -293,6 +324,11 @@ function renderQuestions() {
         <strong>Câu ${q.question_number}</strong>
         <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removeQuestion(${i})">Xoá</button>
       </div>
+      <label>Thuộc nhóm câu hỏi (tuỳ chọn)</label>
+      <select onchange="updateQuestion(${i}, 'group_ref', this.value || null)">
+        <option value="">— Không thuộc nhóm nào —</option>
+        ${groups.map(g => `<option value="${g.temp_id}" ${q.group_ref === g.temp_id ? "selected" : ""}>${escapeHtml(g.label || "(chưa đặt tên)")}</option>`).join("")}
+      </select>
       <label>Nhãn phần (tuỳ chọn — để thống kê điểm theo từng phần, VD: "Part 1", "Passage 2")</label>
       <input type="text" value="${escapeHtml(q.section_label || "")}" onchange="updateQuestion(${i}, 'section_label', this.value)" />
       <label>Loại câu hỏi</label>
@@ -300,7 +336,7 @@ function renderQuestions() {
         <option value="mcq" ${q.question_type === "mcq" ? "selected" : ""}>Trắc nghiệm (MCQ)</option>
         <option value="short_answer" ${q.question_type === "short_answer" ? "selected" : ""}>Trả lời ngắn</option>
       </select>
-      <label>Nội dung câu hỏi <span style="font-weight:400;color:var(--ink-soft);font-size:0.78rem;">(chỉ hiện cho học sinh nếu câu này KHÔNG dùng cú pháp [[số câu]] trong đoạn văn — nếu đã nhúng vào bài đọc, để ngắn gọn tuỳ ý)</span></label>
+      <label>Nội dung câu hỏi <span style="font-weight:400;color:var(--ink-soft);font-size:0.78rem;">(chỉ hiện cho học sinh nếu câu này KHÔNG dùng cú pháp [[số câu]] trong đoạn văn/nhóm — nếu đã nhúng, để ngắn gọn tuỳ ý)</span></label>
       <textarea style="min-height:60px" onchange="updateQuestion(${i}, 'question_text', this.value)">${escapeHtml(q.question_text)}</textarea>
       ${q.question_type === "mcq" ? `
         <label>Các lựa chọn (mỗi dòng 1 lựa chọn)</label>
@@ -330,9 +366,75 @@ function addQuestion() {
   const nextNum = questions.length ? Math.max(...questions.map(q => q.question_number)) + 1 : 1;
   questions.push({
     question_number: nextNum, question_type: "short_answer", question_text: "",
-    options: null, correct_answer: "", explanation: "", section_label: "",
+    options: null, correct_answer: "", explanation: "", section_label: "", group_ref: null,
   });
   renderQuestions();
+}
+
+// ---------- Rich text formatting ----------
+function richExec(targetId, cmd, val) {
+  const el = document.getElementById(targetId);
+  if (el) el.focus();
+  document.execCommand(cmd, false, val || null);
+}
+
+// ---------- Question groups ----------
+function addGroup() {
+  const tempId = "g_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  groups.push({ temp_id: tempId, label: "", instructions_html: "", word_bank: [], order_index: groups.length });
+  renderGroups();
+  renderQuestions(); // cap nhat dropdown "Thuoc nhom" cho cac cau da co
+}
+
+function removeGroup(tempId) {
+  if (!confirm("Xoá nhóm này? Các câu đang thuộc nhóm sẽ chuyển về 'Không thuộc nhóm nào'.")) return;
+  groups = groups.filter(g => g.temp_id !== tempId);
+  questions.forEach(q => { if (q.group_ref === tempId) q.group_ref = null; });
+  renderGroups();
+  renderQuestions();
+}
+
+function updateGroupLabel(tempId, value) {
+  const g = groups.find(g => g.temp_id === tempId);
+  if (g) g.label = value;
+  renderQuestions(); // cap nhat lai ten hien trong dropdown
+}
+
+function updateGroupWordBank(tempId, value) {
+  const g = groups.find(g => g.temp_id === tempId);
+  if (g) g.word_bank = value.split("\n").map(s => s.trim()).filter(Boolean);
+}
+
+function renderGroups() {
+  const list = document.getElementById("groupsList");
+  list.innerHTML = groups.map(g => `
+    <div class="card" style="background:var(--paper);margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <strong>Nhóm câu hỏi</strong>
+        <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removeGroup('${g.temp_id}')">Xoá nhóm</button>
+      </div>
+      <label>Tên nhóm (VD: "Questions 33-37")</label>
+      <input type="text" value="${escapeHtml(g.label)}" onchange="updateGroupLabel('${g.temp_id}', this.value)" />
+      <label>Nội dung / hướng dẫn (dùng [[số câu]] để chèn ô điền)</label>
+      <div class="rte-toolbar">
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','bold')"><b>B</b></button>
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','italic')"><i>I</i></button>
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','underline')"><u>U</u></button>
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','fontSize','2')">Nhỏ</button>
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','fontSize','4')">Vừa</button>
+        <button type="button" onclick="richExec('group_instr_${g.temp_id}','fontSize','6')">Lớn</button>
+      </div>
+      <div id="group_instr_${g.temp_id}" class="rte-editable" contenteditable="true"
+           style="min-height:100px" oninput="syncGroupInstructions('${g.temp_id}', this.innerHTML)">${g.instructions_html}</div>
+      <label>Danh sách gợi ý (word bank) — mỗi dòng 1 lựa chọn. Để trống nếu học sinh phải tự gõ đáp án.</label>
+      <textarea style="min-height:70px" onchange="updateGroupWordBank('${g.temp_id}', this.value)">${(g.word_bank || []).join("\n")}</textarea>
+    </div>
+  `).join("");
+}
+
+function syncGroupInstructions(tempId, html) {
+  const g = groups.find(g => g.temp_id === tempId);
+  if (g) g.instructions_html = html;
 }
 
 function addBulkQuestions() {
@@ -429,9 +531,10 @@ async function saveExam() {
       body: JSON.stringify({
         title,
         skill,
-        passage_text: document.getElementById("passageText").value,
+        passage_text: document.getElementById("passageText").innerHTML,
         audio_url: audioUrl,
         questions,
+        groups,
       }),
     });
     const data = await res.json();
