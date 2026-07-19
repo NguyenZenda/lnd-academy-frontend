@@ -28,13 +28,13 @@
   <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
   <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
   <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
-  <a class="side-menu-item" href="exam-upload.html" style="--d:5"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p> </p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:5;display:none;" id="adminMenuItem"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
 </aside>
 
 <div class="hero">
   <div class="hero-tag">Admin</div>
-  <h1>Tạo đề thi từ file Word</h1>
-  <p> </p>
+  <h1>Tạo đề thi thủ công</h1>
+  <p>Upload file .docx để lấy nhanh nội dung bài đọc/bài nghe vào ô bên dưới (không dùng AI đoán câu hỏi) — bạn tự thêm từng câu hỏi và đáp án đúng.</p>
 </div>
 
 <main>
@@ -65,13 +65,16 @@
         <input type="file" id="audioFile" accept="audio/*" />
       </div>
 
-      <button class="btn btn-primary btn-block" id="parseBtn" onclick="parseExam()">Phân tích bằng AI →</button>
+      <button class="btn btn-primary btn-block" id="parseBtn" onclick="parseExam()">Lấy nội dung từ file →</button>
     </div>
 
     <div class="card" id="reviewCard" style="display:none;">
       <div class="card-label">2. Kiểm tra & chỉnh sửa trước khi lưu</div>
 
       <label for="passageText">Bài đọc / Transcript</label>
+      <div class="form-note">
+        Muốn ô điền từ nằm ngay trong đoạn văn (giống YouPass) thay vì hiện riêng bên dưới: gõ <code>[[số câu]]</code> ngay tại chỗ cần điền, ví dụ: <code>the age group that eat most fat is [[31]]</code>. Câu nào không dùng cú pháp này sẽ tự hiện thành 1 câu hỏi riêng ở danh sách bên dưới.
+      </div>
       <textarea id="passageText" style="min-height:160px"></textarea>
 
       <div id="questionsList"></div>
@@ -122,7 +125,7 @@ async function parseExam() {
 
   const btn = document.getElementById("parseBtn");
   btn.disabled = true;
-  btn.textContent = "Đang phân tích (có thể mất 20-40 giây)...";
+  btn.textContent = "Đang đọc file...";
 
   try {
     const formData = new FormData();
@@ -152,7 +155,7 @@ async function parseExam() {
     errEl.style.display = "block";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Phân tích bằng AI →";
+    btn.textContent = "Lấy nội dung từ file →";
   }
 }
 
@@ -166,6 +169,8 @@ function renderQuestions() {
         <strong>Câu ${q.question_number}</strong>
         <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removeQuestion(${i})">Xoá</button>
       </div>
+      <label>Nhãn phần (tuỳ chọn — để thống kê điểm theo từng phần, VD: "Part 1", "Passage 2")</label>
+      <input type="text" value="${escapeHtml(q.section_label || "")}" onchange="updateQuestion(${i}, 'section_label', this.value)" />
       <label>Loại câu hỏi</label>
       <select onchange="updateQuestion(${i}, 'question_type', this.value)">
         <option value="mcq" ${q.question_type === "mcq" ? "selected" : ""}>Trắc nghiệm (MCQ)</option>
@@ -179,6 +184,8 @@ function renderQuestions() {
       ` : ""}
       <label>Đáp án đúng ${noAnswer ? '<span style="color:var(--danger);font-weight:700;">⚠ CHƯA CÓ — điền tay vào đây</span>' : ""}</label>
       <input type="text" style="${noAnswer ? "border-color:var(--danger);background:rgba(178,64,46,0.06);" : ""}" value="${escapeHtml(q.correct_answer || "")}" onchange="updateQuestion(${i}, 'correct_answer', this.value)" />
+      <label>Giải thích (hiện ra khi học sinh bấm "Xem giải thích" sau khi nộp bài, để trống nếu không cần)</label>
+      <textarea style="min-height:60px" onchange="updateQuestion(${i}, 'explanation', this.value)">${escapeHtml(q.explanation || "")}</textarea>
     </div>
   `;
   }).join("");
@@ -197,7 +204,10 @@ function removeQuestion(i) {
 }
 function addQuestion() {
   const nextNum = questions.length ? Math.max(...questions.map(q => q.question_number)) + 1 : 1;
-  questions.push({ question_number: nextNum, question_type: "short_answer", question_text: "", options: null, correct_answer: "" });
+  questions.push({
+    question_number: nextNum, question_type: "short_answer", question_text: "",
+    options: null, correct_answer: "", explanation: "", section_label: "",
+  });
   renderQuestions();
 }
 
