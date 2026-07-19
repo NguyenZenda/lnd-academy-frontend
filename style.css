@@ -495,6 +495,50 @@ textarea { line-height: 1.7; resize: vertical; }
 .exam-submit-btn:hover { background: var(--green-500); }
 .exam-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.group-block { margin-bottom: 14px; }
+.group-instructions { line-height: 2; color: var(--ink); font-size: 0.92rem; }
+.group-instructions h1, .group-instructions h2, .group-instructions h3 { color: var(--green-900); }
+.word-bank { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.word-chip {
+  padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--green-500);
+  background: rgba(124,181,24,0.08); color: var(--green-800); font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.word-chip:hover { background: var(--green-500); color: #fff; }
+.word-chip:active { transform: scale(0.96); }
+
+.matching-table-card { overflow-x: auto; }
+.matching-table-wrap { overflow-x: auto; }
+.matching-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.matching-table th, .matching-table td {
+  border: 1px solid var(--border); padding: 10px; text-align: center; vertical-align: middle;
+}
+.matching-table thead th {
+  background: var(--paper); color: var(--green-800); font-weight: 700; min-width: 42px;
+}
+.matching-table .mt-qtext {
+  text-align: left; color: var(--ink); line-height: 1.5; min-width: 220px;
+}
+.matching-table .mt-qtext .q-number-badge {
+  display: inline-flex; width: 24px; height: 24px; font-size: 0.75rem; margin-right: 8px; vertical-align: middle;
+}
+.matching-table .mt-radio-cell input[type="radio"] { width: 17px; height: 17px; margin: 0; accent-color: var(--green-600); }
+
+/* ---------- Rich text editor (admin authoring) ---------- */
+.rte-toolbar { display: flex; gap: 6px; margin-bottom: 8px; }
+.rte-toolbar button {
+  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--ink); cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.rte-toolbar button:hover { border-color: var(--green-500); color: var(--green-700); }
+.rte-editable {
+  width: 100%; background: var(--paper); border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; font-size: 0.95rem; line-height: 1.7; color: var(--ink); margin-bottom: 18px;
+  overflow-y: auto;
+}
+.rte-editable:focus { outline: none; border-color: var(--green-500); background: #fff; }
+
 .section-breakdown {
   display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center;
 }
