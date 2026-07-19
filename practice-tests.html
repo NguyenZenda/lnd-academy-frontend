@@ -28,13 +28,13 @@
   <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
   <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
   <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
-  <a class="side-menu-item" href="exam-upload.html" style="--d:5"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p> </p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:5;display:none;" id="adminMenuItem"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
 </aside>
 
 <div class="hero">
   <div class="hero-tag">Luyện đề</div>
   <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Hãy chọn ngay một đề để làm và nhận điểm ngay lập tức nhé.</p>
+  <p id="pageDesc">Chọn 1 đề để làm thử — có cả câu trắc nghiệm và câu trả lời ngắn, chấm điểm ngay khi nộp bài.</p>
 </div>
 
 <main>
@@ -55,23 +55,29 @@
   <div id="takeView" style="display:none;">
     <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToList()">← Quay lại danh sách</button>
 
-    <div class="card" id="audioCard" style="display:none;text-align:center;">
-      <div class="card-label">🎧 Bài nghe (chỉ được nghe 1 lần duy nhất)</div>
-      <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()" style="padding:14px 32px;font-size:1rem;">
-        ▶ Bắt đầu nghe
-      </button>
-      <p id="audioStatusText" style="margin-top:12px;color:var(--ink-soft);font-size:0.85rem;"></p>
-      <audio id="examAudioEl" style="display:none;"></audio>
+    <div class="exam-topbar">
+      <div>
+        <div class="exam-title" id="examTitleText">Đề thi</div>
+        <div class="exam-subtitle" id="examSubtitleText"></div>
+      </div>
+      <div id="audioControl" style="display:none;">
+        <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()">▶ Nghe (1 lần)</button>
+      </div>
+    </div>
+    <p id="audioStatusText" class="exam-audio-status"></p>
+    <audio id="examAudioEl" style="display:none;"></audio>
+
+    <div class="exam-part-header">
+      <strong id="questionsRangeLabel">Câu hỏi</strong>
+      <span id="passageLabel" style="color:var(--ink-soft);font-size:0.85rem;"></span>
     </div>
 
     <div class="card" id="passageCard">
-      <div class="card-label" id="passageLabel">Bài đọc</div>
-      <p id="passageText" style="white-space:pre-line;line-height:1.8;color:var(--ink);"></p>
+      <div id="passageRendered" class="passage-rendered"></div>
     </div>
 
     <div id="questionsArea"></div>
 
-    <button class="btn btn-primary btn-block" id="submitBtn" onclick="submitExam()">Nộp bài →</button>
     <div class="error-msg" id="submitError"></div>
 
     <div class="card" id="resultCard" style="display:none;">
@@ -80,7 +86,13 @@
         <div class="band-label">Điểm số</div>
         <div class="band-score" id="scoreText" style="font-size:3rem;">0/0</div>
       </div>
+      <div id="sectionBreakdown"></div>
       <div id="resultDetails"></div>
+    </div>
+
+    <div class="exam-navbar" id="examNavbar">
+      <div class="exam-navbar-pills" id="examNavPills"></div>
+      <button class="exam-submit-btn" id="submitBtn" onclick="submitExam()" title="Nộp bài">✓</button>
     </div>
   </div>
 </main>
@@ -93,6 +105,7 @@ let currentExamId = null;
 let currentQuestions = [];
 let currentExam = null;
 let audioHasPlayed = false;
+let answers = {};
 
 function setSkillFilter(s) {
   skillFilter = s;
@@ -138,33 +151,42 @@ async function openExam(examId) {
     if (!res.ok) throw new Error(data.detail || "Không tải được đề thi");
 
     currentExam = data.exam;
-    currentQuestions = data.questions;
+    currentQuestions = data.questions.sort((a, b) => a.question_number - b.question_number);
     audioHasPlayed = false;
+    answers = {};
 
-    const audioCard = document.getElementById("audioCard");
+    document.getElementById("examTitleText").textContent = currentExam.title;
+    const nums = currentQuestions.map(q => q.question_number);
+    const rangeText = nums.length ? `Câu hỏi ${Math.min(...nums)}–${Math.max(...nums)}` : "Câu hỏi";
+    document.getElementById("questionsRangeLabel").textContent = rangeText;
+    document.getElementById("examSubtitleText").textContent =
+      currentExam.skill === "reading" ? "Đọc và trả lời câu hỏi" : "Nghe và trả lời câu hỏi";
+
+    const audioControl = document.getElementById("audioControl");
     const passageCard = document.getElementById("passageCard");
+    const passageLabel = document.getElementById("passageLabel");
 
     if (currentExam.skill === "listening") {
-      audioCard.style.display = "block";
-      passageCard.style.display = "none"; // an transcript truoc khi lam bai
+      audioControl.style.display = "block";
       document.getElementById("playAudioBtn").disabled = false;
-      document.getElementById("playAudioBtn").textContent = "▶ Bắt đầu nghe";
+      document.getElementById("playAudioBtn").textContent = "▶ Nghe (1 lần)";
       document.getElementById("audioStatusText").textContent = "";
+      passageLabel.textContent = "(Transcript sẽ hiện sau khi nộp bài)";
       const audioEl = document.getElementById("examAudioEl");
       audioEl.src = currentExam.audio_url || "";
       audioEl.onended = () => {
         document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
       };
     } else {
-      audioCard.style.display = "none";
-      passageCard.style.display = "block";
-      document.getElementById("passageLabel").textContent = "Bài đọc";
-      document.getElementById("passageText").textContent = currentExam.passage_text || "(Không có nội dung bài đọc)";
+      audioControl.style.display = "none";
+      document.getElementById("audioStatusText").textContent = "";
+      passageLabel.textContent = "";
     }
 
-    renderQuestions();
+    renderPassageAndQuestions();
+    renderNavPills();
     document.getElementById("resultCard").style.display = "none";
-    document.getElementById("submitBtn").style.display = "block";
+    document.getElementById("examNavbar").style.display = "flex";
     document.getElementById("listView").style.display = "none";
     document.getElementById("takeView").style.display = "block";
     window.scrollTo(0, 0);
@@ -187,40 +209,83 @@ function playAudioOnce() {
   audioEl.play();
 }
 
-function renderQuestions() {
+function inputChanged(qid, value) {
+  answers[qid] = value;
+  updateNavPillState(qid);
+}
+
+function renderPassageAndQuestions() {
+  const passageCard = document.getElementById("passageCard");
+  const rawPassage = (currentExam.skill === "reading") ? (currentExam.passage_text || "") : "";
+  const numToQ = {};
+  currentQuestions.forEach(q => { numToQ[q.question_number] = q; });
+
+  const embeddedNums = new Set();
+  let passageHtml = "";
+  if (rawPassage) {
+    const parts = rawPassage.split(/(\[\[\d+\]\])/g);
+    passageHtml = parts.map(part => {
+      const m = part.match(/^\[\[(\d+)\]\]$/);
+      if (m) {
+        const num = parseInt(m[1], 10);
+        const q = numToQ[num];
+        if (q) {
+          embeddedNums.add(num);
+          return `<input type="text" class="inline-blank" data-qnum="${num}" placeholder="${num}" oninput="inputChanged('${q.id}', this.value)" />`;
+        }
+      }
+      return escapeHtml(part);
+    }).join("");
+  }
+
+  passageCard.style.display = rawPassage ? "block" : "none";
+  document.getElementById("passageRendered").innerHTML = passageHtml;
+
+  const standalone = currentQuestions.filter(q => !embeddedNums.has(q.question_number));
   const area = document.getElementById("questionsArea");
-  area.innerHTML = currentQuestions.map(q => `
-    <div class="card">
-      <div class="card-label">Câu ${q.question_number}</div>
-      <p style="margin-bottom:14px;color:var(--ink);">${escapeHtml(q.question_text)}</p>
+  area.innerHTML = standalone.map(q => `
+    <div class="card exam-question-card" id="qcard_${q.id}">
+      <div class="q-header">
+        <span class="q-number-badge">${q.question_number}</span>
+        <p class="q-text">${escapeHtml(q.question_text)}</p>
+      </div>
       ${q.question_type === "mcq" ? `
-        <div id="q_${q.id}">
-          ${(q.options || []).map((opt, idx) => `
-            <label style="display:flex;align-items:center;gap:8px;font-weight:400;margin-bottom:8px;cursor:pointer;">
-              <input type="radio" name="q_${q.id}" value="${escapeHtml(opt)}" style="width:auto;margin:0;" />
-              ${escapeHtml(opt)}
+        <div>
+          ${(q.options || []).map(opt => `
+            <label class="q-option">
+              <input type="radio" name="q_${q.id}" value="${escapeHtml(opt)}" onchange="inputChanged('${q.id}', this.value)" />
+              <span>${escapeHtml(opt)}</span>
             </label>
           `).join("")}
         </div>
       ` : `
-        <input type="text" id="q_${q.id}" placeholder="Nhập câu trả lời..." />
+        <input type="text" class="q-short-answer" placeholder="Nhập câu trả lời..." oninput="inputChanged('${q.id}', this.value)" />
       `}
     </div>
   `).join("");
 }
 
-function collectAnswers() {
-  const answers = {};
-  for (const q of currentQuestions) {
-    if (q.question_type === "mcq") {
-      const checked = document.querySelector(`input[name="q_${q.id}"]:checked`);
-      answers[q.id] = checked ? checked.value : "";
-    } else {
-      const input = document.getElementById(`q_${q.id}`);
-      answers[q.id] = input ? input.value.trim() : "";
-    }
+function renderNavPills() {
+  const wrap = document.getElementById("examNavPills");
+  wrap.innerHTML = currentQuestions.map(q => `
+    <button type="button" class="nav-pill" id="pill_${q.id}" onclick="scrollToQuestion('${q.id}', ${q.question_number})">${q.question_number}</button>
+  `).join("");
+}
+
+function updateNavPillState(qid) {
+  const pill = document.getElementById("pill_" + qid);
+  if (!pill) return;
+  pill.classList.toggle("answered", !!(answers[qid] && answers[qid].trim()));
+}
+
+function scrollToQuestion(qid, qnum) {
+  const inlineBlank = document.querySelector(`.inline-blank[data-qnum="${qnum}"]`);
+  const card = document.getElementById("qcard_" + qid);
+  const target = inlineBlank || card;
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (inlineBlank) inlineBlank.focus();
   }
-  return answers;
 }
 
 async function submitExam() {
@@ -228,10 +293,8 @@ async function submitExam() {
   errEl.style.display = "none";
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  btn.textContent = "Đang chấm điểm...";
 
   try {
-    const answers = collectAnswers();
     const res = await fetch(API_URL + "/exams/" + currentExamId + "/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -246,34 +309,60 @@ async function submitExam() {
     errEl.style.display = "block";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Nộp bài →";
   }
 }
 
 function showResult(data) {
   document.getElementById("scoreText").textContent = `${data.score}/${data.total}`;
+
+  const breakdown = data.section_breakdown || [];
+  const breakdownHtml = breakdown.length > 1 ? `
+    <div class="section-breakdown">
+      ${breakdown.map(s => `
+        <div class="section-breakdown-item">
+          <span>${escapeHtml(s.label)}</span>
+          <strong>${s.correct}/${s.total}</strong>
+        </div>
+      `).join("")}
+    </div>
+  ` : "";
+  document.getElementById("sectionBreakdown").innerHTML = breakdownHtml;
+
   document.getElementById("resultDetails").innerHTML = data.results.map(r => `
     <div class="criterion-card" style="margin-bottom:10px;">
       <div class="criterion-header">
-        <span class="criterion-name">Câu ${r.question_number}</span>
+        <span class="criterion-name">Câu ${r.question_number}${r.section_label ? " · " + escapeHtml(r.section_label) : ""}</span>
         <span style="font-size:1.1rem;">${r.is_correct ? "✅" : "❌"}</span>
       </div>
       <div class="criterion-feedback">
+        <p style="margin-bottom:6px;color:var(--ink);">${escapeHtml(r.question_text || "")}</p>
         Bạn trả lời: <strong>${escapeHtml(r.your_answer || "(bỏ trống)")}</strong><br/>
         ${!r.is_correct ? "Đáp án đúng: <strong>" + escapeHtml(r.correct_answer) + "</strong>" : ""}
       </div>
+      ${r.explanation ? `
+        <button class="btn btn-ghost explain-toggle" onclick="toggleExplanation('${r.question_id}')" style="margin-top:10px;font-size:0.8rem;padding:6px 14px;">
+          💡 Xem giải thích
+        </button>
+        <div class="explanation-box" id="explain_${r.question_id}" style="display:none;">${escapeHtml(r.explanation)}</div>
+      ` : ""}
     </div>
   `).join("");
   document.getElementById("resultCard").style.display = "block";
-  document.getElementById("submitBtn").style.display = "none";
+  document.getElementById("examNavbar").style.display = "none";
 
   if (currentExam && currentExam.skill === "listening") {
     document.getElementById("passageCard").style.display = "block";
     document.getElementById("passageLabel").textContent = "Transcript (hiện sau khi nộp bài)";
-    document.getElementById("passageText").textContent = currentExam.passage_text || "(Không có transcript)";
+    document.getElementById("passageRendered").textContent = currentExam.passage_text || "(Không có transcript)";
   }
 
   document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
+}
+
+function toggleExplanation(qid) {
+  const box = document.getElementById("explain_" + qid);
+  if (!box) return;
+  box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
 function backToList() {
