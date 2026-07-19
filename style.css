@@ -507,6 +507,54 @@ textarea { line-height: 1.7; resize: vertical; }
 .word-chip:hover { background: var(--green-500); color: #fff; }
 .word-chip:active { transform: scale(0.96); }
 
+/* ---------- Timer ---------- */
+.exam-timer {
+  display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.95rem;
+  color: var(--green-800); background: var(--paper); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+}
+.exam-timer.timer-warning { color: #fff; background: var(--danger); border-color: var(--danger); animation: timerPulse 1s infinite; }
+@keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+/* ---------- Part tabs ---------- */
+.part-tabs { display: none; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+.part-tab {
+  padding: 10px 18px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--ink-soft); font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+}
+.part-tab:hover { border-color: var(--green-500); }
+.part-tab.active { border-color: var(--green-600); background: rgba(90,138,34,0.10); color: var(--green-800); }
+.part-tab-progress {
+  font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; background: var(--paper); color: var(--ink-soft);
+}
+.part-tab.active .part-tab-progress { background: var(--green-600); color: #fff; }
+
+/* ---------- Flag for review ---------- */
+.flag-btn {
+  background: none; border: 1px solid var(--border); border-radius: 8px; width: 34px; height: 34px;
+  cursor: pointer; font-size: 0.95rem; opacity: 0.5; transition: all 0.15s; flex-shrink: 0;
+}
+.flag-btn:hover { opacity: 1; }
+.flag-btn.flagged { opacity: 1; background: #fff7e0; border-color: #d9a441; }
+.q-header { display: flex; align-items: flex-start; gap: 12px; }
+.q-header .flag-btn { margin-left: auto; }
+
+.nav-pill.flagged { background: #f4c443; border-color: #d9a441; color: #4a3300; }
+.nav-pill.flagged.answered { background: linear-gradient(135deg, var(--green-300) 50%, #f4c443 50%); }
+
+/* ---------- Time-limit choice modal ---------- */
+.time-option-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.time-option {
+  display: flex; align-items: center; gap: 14px; padding: 14px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+}
+.time-option:hover { border-color: var(--green-500); }
+.time-option input[type="radio"] { width: 18px; height: 18px; accent-color: var(--green-600); flex-shrink: 0; }
+.time-option strong { color: var(--green-900); font-size: 0.92rem; }
+.time-option p { color: var(--ink-soft); font-size: 0.8rem; margin-top: 2px; }
+.time-option:has(input:checked) { border-color: var(--green-600); background: rgba(90,138,34,0.08); }
+
 .matching-table-card { overflow-x: auto; }
 .matching-table-wrap { overflow-x: auto; }
 .matching-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
