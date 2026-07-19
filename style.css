@@ -88,7 +88,9 @@ nav {
 .side-menu-title {
   font-family: 'Fraunces', serif; font-size: 1.05rem; color: var(--green-900);
   font-weight: 600; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  display: block; text-decoration: none; transition: color 0.15s;
 }
+.side-menu-title:hover { color: var(--green-600); }
 
 .side-menu-item {
   display: flex; align-items: center; gap: 14px; padding: 14px 12px; border-radius: var(--radius-sm);
