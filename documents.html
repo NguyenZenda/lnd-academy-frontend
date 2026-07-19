@@ -170,7 +170,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
 
     const res = await fetch(API_URL + "/documents/upload", {
       method: "POST",
-      headers: { ...authHeader() },
+      headers: { ...(await authHeaderAsync()) },
       body: formData,
     });
     const data = await res.json();
