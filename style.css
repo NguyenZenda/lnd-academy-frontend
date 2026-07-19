@@ -433,6 +433,83 @@ textarea { line-height: 1.7; resize: vertical; }
   .chat-panel { right: 12px; left: 12px; width: auto; bottom: 88px; }
   .chat-bubble { right: 16px; bottom: 16px; }
 }
+/* ---------- Exam-taking interface (YouPass-style) ---------- */
+.exam-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0; margin-top: 8px;
+}
+.exam-title { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--green-900); font-weight: 600; }
+.exam-subtitle { font-size: 0.8rem; color: var(--ink-soft); margin-top: 2px; }
+.exam-audio-status { font-size: 0.8rem; color: var(--ink-soft); padding: 0 20px; margin-bottom: 4px; }
+
+.exam-part-header {
+  background: var(--paper); border: 1px solid var(--border); border-top: none;
+  padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.95rem; color: var(--ink);
+}
+
+.passage-rendered { white-space: pre-line; line-height: 2; color: var(--ink); font-size: 0.95rem; }
+
+.inline-blank {
+  display: inline-block; width: 90px; margin: 0 4px; padding: 4px 8px;
+  border: 1.5px solid var(--green-500); border-radius: 6px; background: var(--paper);
+  font-size: 0.9rem; text-align: center; font-family: 'Inter', sans-serif;
+}
+.inline-blank:focus { outline: none; border-color: var(--green-600); background: #fff; }
+
+.exam-question-card { margin-bottom: 14px; }
+.q-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.q-number-badge {
+  flex-shrink: 0; width: 30px; height: 30px; border: 1.5px solid var(--green-600); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+  font-size: 0.85rem; color: var(--green-800);
+}
+.q-text { color: var(--ink); font-size: 0.95rem; line-height: 1.6; padding-top: 4px; }
+.q-option {
+  display: flex; align-items: center; gap: 10px; font-weight: 400; margin-bottom: 10px;
+  cursor: pointer; padding-left: 42px; font-size: 0.92rem; color: var(--ink);
+}
+.q-option input[type="radio"] { width: 17px; height: 17px; margin: 0; accent-color: var(--green-600); flex-shrink: 0; }
+.q-short-answer { max-width: 260px; margin-left: 42px; margin-bottom: 0; }
+
+.exam-navbar {
+  display: none; justify-content: space-between; align-items: center; gap: 12px;
+  position: sticky; bottom: 0; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 20px;
+  box-shadow: 0 -6px 20px rgba(46,74,20,0.08);
+}
+.exam-navbar-pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.nav-pill {
+  width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid var(--border);
+  background: var(--paper); color: var(--ink-soft); font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.nav-pill:hover { border-color: var(--green-500); }
+.nav-pill.answered { background: var(--green-300); border-color: var(--green-500); color: var(--green-900); }
+.exam-submit-btn {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 10px; border: none;
+  background: var(--green-600); color: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.exam-submit-btn:hover { background: var(--green-500); }
+.exam-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.section-breakdown {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center;
+}
+.section-breakdown-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; font-size: 0.85rem; color: var(--ink-soft); display: flex; gap: 8px; align-items: center;
+}
+.section-breakdown-item strong { color: var(--green-800); font-size: 0.95rem; }
+
+.explain-toggle { background: rgba(90,138,34,0.08); border-color: var(--green-500); color: var(--green-800); }
+.explanation-box {
+  margin-top: 10px; padding: 12px 14px; background: var(--paper); border-left: 3px solid var(--green-500);
+  border-radius: 6px; font-size: 0.85rem; color: var(--ink); line-height: 1.6;
+}
+
 /* ---------- Modal ---------- */
 .modal-overlay {
   display: none; position: fixed; inset: 0; background: rgba(34,48,24,0.5); backdrop-filter: blur(2px);
