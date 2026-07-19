@@ -34,7 +34,7 @@
 <div class="hero" id="pageHero">
   <div class="hero-tag">Luyện đề</div>
   <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Hãy chọn một đề để làm và nhận ngay kết quả chi tiết nhé.</p>
+  <p id="pageDesc">Chọn 1 đề để làm thử — có cả câu trắc nghiệm và câu trả lời ngắn, chấm điểm ngay khi nộp bài.</p>
 </div>
 
 <main id="mainEl">
@@ -60,12 +60,17 @@
         <div class="exam-title" id="examTitleText">Đề thi</div>
         <div class="exam-subtitle" id="examSubtitleText"></div>
       </div>
-      <div id="audioControl" style="display:none;">
-        <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()">▶ Nghe (1 lần)</button>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="exam-timer" id="examTimer" style="display:none;">⏱ <span id="examTimerText">--:--</span></div>
+        <div id="audioControl" style="display:none;">
+          <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()">▶ Nghe (1 lần)</button>
+        </div>
       </div>
     </div>
     <p id="audioStatusText" class="exam-audio-status"></p>
     <audio id="examAudioEl" style="display:none;"></audio>
+
+    <div class="part-tabs" id="partTabs" style="display:none;"></div>
 
     <div class="exam-part-header">
       <strong id="questionsRangeLabel">Câu hỏi</strong>
@@ -104,6 +109,34 @@
   </div>
 </main>
 
+<div class="modal-overlay" id="timerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Chọn thời gian làm bài</h3>
+      <button class="modal-close" onclick="closeTimerModal()">✕</button>
+    </div>
+    <div class="time-option-list">
+      <label class="time-option">
+        <input type="radio" name="timeChoice" value="unlimited" checked />
+        <div><strong>Không giới hạn</strong><p>Làm thoải mái, không đếm giờ</p></div>
+      </label>
+      <label class="time-option">
+        <input type="radio" name="timeChoice" value="extended" />
+        <div><strong>Extended (+20%)</strong><p>72 phút — thêm thời gian so với thi thật</p></div>
+      </label>
+      <label class="time-option">
+        <input type="radio" name="timeChoice" value="standard" />
+        <div><strong>Standard</strong><p>60 phút — giống thời gian thi thật</p></div>
+      </label>
+      <label class="time-option">
+        <input type="radio" name="timeChoice" value="hardcore" />
+        <div><strong>Hardcore</strong><p>50 phút — luyện tốc độ, khắt khe hơn thi thật</p></div>
+      </label>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="confirmTimerChoice()">Bắt đầu làm bài →</button>
+  </div>
+</div>
+
 <script src="auth.js"></script>
 <script src="chat-widget.js"></script>
 <script>
@@ -112,9 +145,16 @@ let currentExamId = null;
 let currentQuestions = [];
 let currentExam = null;
 let currentGroups = [];
+let currentParts = [];
+let activePartId = null;
 let lastFocusedBlank = null;
-let audioHasPlayed = false;
+let audioHasPlayed = false; // dung khi KHONG co Parts (audio muc exam)
+let playedPartAudio = new Set(); // dung khi CO Parts (moi part 1 lan)
 let answers = {};
+let flaggedQuestions = new Set();
+let pendingExamId = null;
+let timerInterval = null;
+let examEndTime = null; // timestamp (ms) luc het gio, null neu unlimited
 
 function setSkillFilter(s) {
   skillFilter = s;
@@ -143,7 +183,7 @@ async function loadExamList() {
           <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span></div>
         </div>
         <div class="doc-actions">
-          <button class="btn btn-primary" onclick="openExam('${e.id}')">Làm bài</button>
+          <button class="btn btn-primary" onclick="openTimerModal('${e.id}')">Làm bài</button>
         </div>
       </div>
     `).join("");
@@ -152,7 +192,27 @@ async function loadExamList() {
   }
 }
 
-async function openExam(examId) {
+// ---------- Buoc 1: chon thoi gian lam bai ----------
+function openTimerModal(examId) {
+  pendingExamId = examId;
+  document.getElementById("timerModal").classList.add("open");
+}
+function closeTimerModal() {
+  document.getElementById("timerModal").classList.remove("open");
+  pendingExamId = null;
+}
+function confirmTimerChoice() {
+  const choice = document.querySelector('input[name="timeChoice"]:checked').value;
+  const durationMap = { unlimited: null, extended: 72 * 60, standard: 60 * 60, hardcore: 50 * 60 };
+  const seconds = durationMap[choice];
+  const examId = pendingExamId;
+  document.getElementById("timerModal").classList.remove("open");
+  pendingExamId = null;
+  openExam(examId, seconds);
+}
+
+// ---------- Buoc 2: mo de thi va bat dau lam ----------
+async function openExam(examId, durationSeconds) {
   currentExamId = examId;
   try {
     const res = await fetch(API_URL + "/exams/" + examId);
@@ -162,59 +222,153 @@ async function openExam(examId) {
     currentExam = data.exam;
     currentQuestions = data.questions.sort((a, b) => a.question_number - b.question_number);
     currentGroups = (data.groups || []).sort((a, b) => a.order_index - b.order_index);
+    currentParts = (data.parts || []).sort((a, b) => a.order_index - b.order_index);
+    activePartId = currentParts.length ? currentParts[0].id : null;
+
     audioHasPlayed = false;
+    playedPartAudio = new Set();
     answers = {};
+    flaggedQuestions = new Set();
 
     document.getElementById("examTitleText").textContent = currentExam.title;
-    const nums = currentQuestions.map(q => q.question_number);
-    const rangeText = nums.length ? `Câu hỏi ${Math.min(...nums)}–${Math.max(...nums)}` : "Câu hỏi";
-    document.getElementById("questionsRangeLabel").textContent = rangeText;
     document.getElementById("examSubtitleText").textContent =
       currentExam.skill === "reading" ? "Đọc và trả lời câu hỏi" : "Nghe và trả lời câu hỏi";
 
-    const audioControl = document.getElementById("audioControl");
-    const passageCard = document.getElementById("passageCard");
-    const passageLabel = document.getElementById("passageLabel");
-
-    if (currentExam.skill === "listening") {
-      audioControl.style.display = "block";
-      document.getElementById("playAudioBtn").disabled = false;
-      document.getElementById("playAudioBtn").textContent = "▶ Nghe (1 lần)";
-      document.getElementById("audioStatusText").textContent = "";
-      passageLabel.textContent = "(Transcript sẽ hiện sau khi nộp bài)";
-      const audioEl = document.getElementById("examAudioEl");
-      audioEl.src = currentExam.audio_url || "";
-      audioEl.onended = () => {
-        document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
-      };
-    } else {
-      audioControl.style.display = "none";
-      document.getElementById("audioStatusText").textContent = "";
-      passageLabel.textContent = "";
-    }
-
-    renderPassageAndQuestions();
+    renderPartTabs();
+    renderActivePart();
     renderNavPills();
+
     document.getElementById("resultCard").style.display = "none";
     document.getElementById("examNavbar").style.display = "flex";
     document.getElementById("listView").style.display = "none";
     document.getElementById("takeView").style.display = "block";
     document.getElementById("pageHero").style.display = "none";
     document.getElementById("mainEl").classList.add("exam-mode");
+
+    startTimer(durationSeconds);
     window.scrollTo(0, 0);
   } catch (e) {
     alert(e.message);
   }
 }
 
-function playAudioOnce() {
-  if (audioHasPlayed) return;
-  const audioEl = document.getElementById("examAudioEl");
-  if (!audioEl.src) {
-    document.getElementById("audioStatusText").textContent = "Đề thi này chưa có file âm thanh.";
+// ---------- Dong ho dem nguoc ----------
+function startTimer(durationSeconds) {
+  clearInterval(timerInterval);
+  const timerEl = document.getElementById("examTimer");
+  const timerText = document.getElementById("examTimerText");
+
+  if (!durationSeconds) {
+    timerEl.style.display = "none";
+    examEndTime = null;
     return;
   }
-  audioHasPlayed = true;
+  timerEl.style.display = "flex";
+  examEndTime = Date.now() + durationSeconds * 1000;
+
+  function tick() {
+    const remainMs = examEndTime - Date.now();
+    if (remainMs <= 0) {
+      timerText.textContent = "00:00";
+      clearInterval(timerInterval);
+      alert("Đã hết giờ làm bài! Bài làm sẽ được nộp tự động.");
+      submitExam();
+      return;
+    }
+    const totalSec = Math.floor(remainMs / 1000);
+    const m = Math.floor(totalSec / 60).toString().padStart(2, "0");
+    const s = (totalSec % 60).toString().padStart(2, "0");
+    timerText.textContent = `${m}:${s}`;
+    timerEl.classList.toggle("timer-warning", totalSec <= 300);
+  }
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+
+// ---------- Parts (Part 1/2/3) ----------
+function renderPartTabs() {
+  const wrap = document.getElementById("partTabs");
+  if (!currentParts.length) {
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "flex";
+  wrap.innerHTML = currentParts.map(p => {
+    const partQs = currentQuestions.filter(q => q.part_id === p.id);
+    const answeredCount = partQs.filter(q => answers[q.id] && answers[q.id].trim()).length;
+    return `
+      <button type="button" class="part-tab ${p.id === activePartId ? "active" : ""}" onclick="switchPart('${p.id}')">
+        ${escapeHtml(p.title || "Part " + p.part_number)}
+        <span class="part-tab-progress">${answeredCount} of ${partQs.length}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function switchPart(partId) {
+  activePartId = partId;
+  renderPartTabs();
+  renderActivePart();
+  renderNavPills();
+  window.scrollTo({ top: document.getElementById("partTabs").offsetTop - 80, behavior: "smooth" });
+}
+
+function renderActivePart() {
+  let passageSource = "", audioSource = "", groupsSource = [], questionsSource = [];
+
+  if (currentParts.length && activePartId) {
+    const part = currentParts.find(p => p.id === activePartId);
+    passageSource = (part && part.passage_text) || "";
+    audioSource = (part && part.audio_url) || "";
+    groupsSource = currentGroups.filter(g => g.part_id === activePartId);
+    questionsSource = currentQuestions.filter(q => q.part_id === activePartId);
+  } else {
+    passageSource = currentExam.passage_text || "";
+    audioSource = currentExam.audio_url || "";
+    groupsSource = currentGroups.filter(g => !g.part_id);
+    questionsSource = currentQuestions.filter(q => !q.part_id || !currentParts.length);
+  }
+
+  const nums = questionsSource.map(q => q.question_number);
+  document.getElementById("questionsRangeLabel").textContent =
+    nums.length ? `Câu hỏi ${Math.min(...nums)}–${Math.max(...nums)}` : "Câu hỏi";
+
+  const audioControl = document.getElementById("audioControl");
+  const audioKey = activePartId || "exam";
+  const alreadyPlayed = currentParts.length ? playedPartAudio.has(audioKey) : audioHasPlayed;
+
+  if (currentExam.skill === "listening") {
+    audioControl.style.display = "block";
+    document.getElementById("playAudioBtn").disabled = alreadyPlayed;
+    document.getElementById("playAudioBtn").textContent = alreadyPlayed ? "✓ Đã nghe" : "▶ Nghe (1 lần)";
+    document.getElementById("audioStatusText").textContent = alreadyPlayed ? "Đã phát xong — không thể nghe lại." : "";
+    document.getElementById("passageLabel").textContent = "(Transcript sẽ hiện sau khi nộp bài)";
+    const audioEl = document.getElementById("examAudioEl");
+    audioEl.src = audioSource || "";
+    audioEl.onended = () => {
+      playedPartAudio.add(audioKey);
+      audioHasPlayed = true;
+      document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
+      document.getElementById("playAudioBtn").disabled = true;
+      document.getElementById("playAudioBtn").textContent = "✓ Đã nghe";
+    };
+  } else {
+    audioControl.style.display = "none";
+    document.getElementById("audioStatusText").textContent = "";
+    document.getElementById("passageLabel").textContent = "";
+  }
+
+  renderPassageAndQuestions(passageSource, groupsSource, questionsSource);
+}
+
+function playAudioOnce() {
+  const audioKey = activePartId || "exam";
+  if (currentParts.length ? playedPartAudio.has(audioKey) : audioHasPlayed) return;
+  const audioEl = document.getElementById("examAudioEl");
+  if (!audioEl.src) {
+    document.getElementById("audioStatusText").textContent = "Phần này chưa có file âm thanh.";
+    return;
+  }
   document.getElementById("playAudioBtn").disabled = true;
   document.getElementById("playAudioBtn").textContent = "🔊 Đang phát...";
   document.getElementById("audioStatusText").textContent = "Đang phát — nghe kỹ, sẽ không phát lại được.";
@@ -224,18 +378,25 @@ function playAudioOnce() {
 function inputChanged(qid, value) {
   answers[qid] = value;
   updateNavPillState(qid);
+  renderPartTabs();
 }
 
-function renderPassageAndQuestions() {
-  const passageCard = document.getElementById("passageCard");
-  const isReading = currentExam.skill === "reading";
-  const rawPassage = isReading ? (currentExam.passage_text || "") : "";
+function toggleFlag(qid) {
+  if (flaggedQuestions.has(qid)) flaggedQuestions.delete(qid);
+  else flaggedQuestions.add(qid);
+  updateNavPillState(qid);
+  const btn = document.getElementById("flagbtn_" + qid);
+  if (btn) btn.classList.toggle("flagged", flaggedQuestions.has(qid));
+}
+
+function renderPassageAndQuestions(rawPassage, groupsSource, questionsSource) {
   const numToQ = {};
-  currentQuestions.forEach(q => { numToQ[q.question_number] = q; });
+  questionsSource.forEach(q => { numToQ[q.question_number] = q; });
 
   const embeddedNums = new Set();
   let passageHtml = "";
-  if (rawPassage) {
+  const isReading = currentExam.skill === "reading";
+  if (isReading && rawPassage) {
     const parts = rawPassage.split(/(\[\[\d+\]\])/g);
     passageHtml = parts.map(part => {
       const m = part.match(/^\[\[(\d+)\]\]$/);
@@ -252,16 +413,14 @@ function renderPassageAndQuestions() {
   } else if (!isReading) {
     passageHtml = '<p style="color:var(--ink-soft);text-align:center;padding:40px 20px;">🎧 Nghe kỹ bài audio ở nút "Nghe (1 lần)" phía trên.<br/>Transcript sẽ hiện ra ở đây sau khi bạn nộp bài.</p>';
   }
-
+  document.getElementById("passageCard").style.display = (isReading || !isReading) ? "block" : "none";
   document.getElementById("passageRendered").innerHTML = passageHtml;
 
-  // Render cac "nhom cau hoi" (VD Questions 33-37) truoc, thu thap so cau da nhung vao do
-  const groupsHtml = currentGroups.map(g => renderGroupBlock(g, numToQ, embeddedNums)).join("");
+  const groupsHtml = groupsSource.map(g => renderGroupBlock(g, numToQ, embeddedNums)).join("");
 
-  const standalone = currentQuestions.filter(q => !embeddedNums.has(q.question_number));
+  const standalone = questionsSource.filter(q => !embeddedNums.has(q.question_number));
   const stGroups = groupStandaloneQuestions(standalone);
-  const area = document.getElementById("questionsArea");
-  area.innerHTML = groupsHtml + stGroups.map(renderGroup).join("");
+  document.getElementById("questionsArea").innerHTML = groupsHtml + stGroups.map(renderGroup).join("");
 }
 
 function renderGroupBlock(g, numToQ, embeddedNums) {
@@ -277,7 +436,7 @@ function renderGroupBlock(g, numToQ, embeddedNums) {
         return `<input type="text" class="inline-blank" data-qnum="${num}" placeholder="${num}" oninput="inputChanged('${q.id}', this.value)" onfocus="setLastBlank(this)" />`;
       }
     }
-    return part; // giu nguyen HTML admin da dinh dang (khong escape, vi day la HTML that tu rich-text editor)
+    return part;
   }).join("");
 
   const wordBankHtml = (g.word_bank && g.word_bank.length) ? `
@@ -325,6 +484,11 @@ function groupStandaloneQuestions(qs) {
   return groups;
 }
 
+function flagButtonHtml(qid) {
+  const isFlagged = flaggedQuestions.has(qid);
+  return `<button type="button" id="flagbtn_${qid}" class="flag-btn ${isFlagged ? "flagged" : ""}" onclick="toggleFlag('${qid}')" title="Đánh dấu xem lại">🚩</button>`;
+}
+
 function renderGroup(g) {
   if (g.type === "matching_table") {
     const qs = g.questions;
@@ -335,12 +499,13 @@ function renderGroup(g) {
         <div class="card-label">Câu ${first}–${last}</div>
         <div class="matching-table-wrap">
           <table class="matching-table">
-            <thead><tr><th></th>${opts.map(o => `<th>${escapeHtml(o)}</th>`).join("")}</tr></thead>
+            <thead><tr><th></th>${opts.map(o => `<th>${escapeHtml(o)}</th>`).join("")}<th></th></tr></thead>
             <tbody>
               ${qs.map(q => `
                 <tr id="qcard_${q.id}">
                   <td class="mt-qtext"><span class="q-number-badge">${q.question_number}</span> ${escapeHtml(q.question_text)}</td>
                   ${opts.map(o => `<td class="mt-radio-cell"><input type="radio" name="q_${q.id}" value="${escapeHtml(o)}" onchange="inputChanged('${q.id}', this.value)" /></td>`).join("")}
+                  <td>${flagButtonHtml(q.id)}</td>
                 </tr>
               `).join("")}
             </tbody>
@@ -356,6 +521,7 @@ function renderGroup(g) {
       <div class="q-header">
         <span class="q-number-badge">${q.question_number}</span>
         <p class="q-text">${escapeHtml(q.question_text)}</p>
+        ${flagButtonHtml(q.id)}
       </div>
       ${q.question_type === "mcq" ? `
         <div>
@@ -371,31 +537,40 @@ function renderGroup(g) {
       `}
     </div>
   `;
+}
 
 function renderNavPills() {
   const wrap = document.getElementById("examNavPills");
   wrap.innerHTML = currentQuestions.map(q => `
-    <button type="button" class="nav-pill" id="pill_${q.id}" onclick="scrollToQuestion('${q.id}', ${q.question_number})">${q.question_number}</button>
+    <button type="button" class="nav-pill" id="pill_${q.id}" onclick="scrollToQuestion('${q.id}', ${q.question_number}, ${q.part_id ? `'${q.part_id}'` : "null"})">${q.question_number}</button>
   `).join("");
+  currentQuestions.forEach(q => updateNavPillState(q.id));
 }
 
 function updateNavPillState(qid) {
   const pill = document.getElementById("pill_" + qid);
   if (!pill) return;
   pill.classList.toggle("answered", !!(answers[qid] && answers[qid].trim()));
+  pill.classList.toggle("flagged", flaggedQuestions.has(qid));
 }
 
-function scrollToQuestion(qid, qnum) {
-  const inlineBlank = document.querySelector(`.inline-blank[data-qnum="${qnum}"]`);
-  const card = document.getElementById("qcard_" + qid);
-  const target = inlineBlank || card;
-  if (target) {
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (inlineBlank) inlineBlank.focus();
+function scrollToQuestion(qid, qnum, partId) {
+  if (currentParts.length && partId && partId !== activePartId) {
+    switchPart(partId);
   }
+  setTimeout(() => {
+    const inlineBlank = document.querySelector(`.inline-blank[data-qnum="${qnum}"]`);
+    const card = document.getElementById("qcard_" + qid);
+    const target = inlineBlank || card;
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (inlineBlank) inlineBlank.focus();
+    }
+  }, currentParts.length ? 120 : 0);
 }
 
 async function submitExam() {
+  clearInterval(timerInterval);
   const errEl = document.getElementById("submitError");
   errEl.style.display = "none";
   const btn = document.getElementById("submitBtn");
@@ -456,11 +631,16 @@ function showResult(data) {
   `).join("");
   document.getElementById("resultCard").style.display = "block";
   document.getElementById("examNavbar").style.display = "none";
+  document.getElementById("examTimer").style.display = "none";
+  document.getElementById("partTabs").style.display = "none";
 
   if (currentExam && currentExam.skill === "listening") {
     document.getElementById("passageCard").style.display = "block";
     document.getElementById("passageLabel").textContent = "Transcript (hiện sau khi nộp bài)";
-    document.getElementById("passageRendered").textContent = currentExam.passage_text || "(Không có transcript)";
+    const fullTranscript = currentParts.length
+      ? currentParts.map(p => `--- ${p.title || "Part " + p.part_number} ---\n${p.passage_text || ""}`).join("\n\n")
+      : (currentExam.passage_text || "(Không có transcript)");
+    document.getElementById("passageRendered").textContent = fullTranscript;
   }
 
   document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
@@ -473,6 +653,7 @@ function toggleExplanation(qid) {
 }
 
 function backToList() {
+  clearInterval(timerInterval);
   const audioEl = document.getElementById("examAudioEl");
   audioEl.pause();
   audioEl.src = "";
