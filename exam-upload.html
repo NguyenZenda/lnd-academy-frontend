@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tạo đề thi – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <div class="side-menu-title">Khám phá LND Academy</div>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="content-studio.html" style="--d:4"><span class="icon">📣</span><div><h4>Content Studio</h4><p>Tạo & kiểm duyệt nội dung truyền thông (Giáo viên)</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:5"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:6"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Upload docx, AI tự tách câu hỏi & đáp án</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Admin</div>
+  <h1>Tạo đề thi từ file Word</h1>
+  <p>Upload file .docx chứa bài đọc/bài nghe kèm câu hỏi và đáp án — AI sẽ tự tách thành từng câu, bạn kiểm tra/sửa lại trước khi lưu.</p>
+</div>
+
+<main>
+  <div id="accessDenied" class="card" style="display:none;text-align:center;">
+    <p style="color:var(--ink-soft);">Trang này chỉ dành cho tài khoản <strong>Admin</strong>.</p>
+    <div style="margin-top:16px;"><a class="btn btn-primary" href="login.html">Đăng nhập</a></div>
+  </div>
+
+  <div id="uploadSection" style="display:none;">
+    <div class="card">
+      <div class="card-label">1. Upload file đề thi</div>
+      <div class="error-msg" id="parseError"></div>
+
+      <label>Kỹ năng</label>
+      <div class="task-toggle">
+        <button type="button" class="task-btn active" id="skillReadingBtn" onclick="setSkill('reading')">📖 Reading</button>
+        <button type="button" class="task-btn" id="skillListeningBtn" onclick="setSkill('listening')">🎧 Listening</button>
+      </div>
+
+      <label for="examTitle">Tên đề thi</label>
+      <input type="text" id="examTitle" placeholder="VD: IELTS Reading Practice Test 1" />
+
+      <label for="docxFile">File .docx (bài đọc/nghe + câu hỏi + đáp án)</label>
+      <input type="file" id="docxFile" accept=".docx" />
+
+      <button class="btn btn-primary btn-block" id="parseBtn" onclick="parseExam()">Phân tích bằng AI →</button>
+    </div>
+
+    <div class="card" id="reviewCard" style="display:none;">
+      <div class="card-label">2. Kiểm tra & chỉnh sửa trước khi lưu</div>
+
+      <label for="passageText">Bài đọc / Transcript</label>
+      <textarea id="passageText" style="min-height:160px"></textarea>
+
+      <div id="questionsList"></div>
+
+      <button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="addQuestion()">+ Thêm câu hỏi</button>
+      <button class="btn btn-primary btn-block" id="saveBtn" onclick="saveExam()">Lưu đề thi →</button>
+      <div class="error-msg" id="saveError"></div>
+      <div class="success-msg" id="saveSuccess"></div>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+let skill = "reading";
+let questions = [];
+
+function setSkill(s) {
+  skill = s;
+  document.getElementById("skillReadingBtn").classList.toggle("active", s === "reading");
+  document.getElementById("skillListeningBtn").classList.toggle("active", s === "listening");
+}
+
+function initAccess() {
+  const user = getUser();
+  const denied = document.getElementById("accessDenied");
+  const section = document.getElementById("uploadSection");
+  if (user && user.role === "admin") {
+    denied.style.display = "none";
+    section.style.display = "block";
+  } else {
+    denied.style.display = "block";
+    section.style.display = "none";
+  }
+}
+
+async function parseExam() {
+  const errEl = document.getElementById("parseError");
+  errEl.style.display = "none";
+  const fileInput = document.getElementById("docxFile");
+  if (!fileInput.files[0]) {
+    errEl.textContent = "Chọn file .docx trước đã.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("parseBtn");
+  btn.disabled = true;
+  btn.textContent = "Đang phân tích (có thể mất 20-40 giây)...";
+
+  try {
+    const formData = new FormData();
+    formData.append("skill", skill);
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch(API_URL + "/exams/parse", {
+      method: "POST",
+      headers: { ...authHeader() },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Phân tích thất bại");
+
+    document.getElementById("passageText").value = data.passage_text || "";
+    questions = (data.questions || []).map(q => ({
+      question_number: q.question_number,
+      question_type: q.question_type,
+      question_text: q.question_text,
+      options: q.options || null,
+      correct_answer: q.correct_answer,
+    }));
+    renderQuestions();
+    document.getElementById("reviewCard").style.display = "block";
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Phân tích bằng AI →";
+  }
+}
+
+function renderQuestions() {
+  const list = document.getElementById("questionsList");
+  list.innerHTML = questions.map((q, i) => {
+    const noAnswer = !q.correct_answer || !q.correct_answer.trim();
+    return `
+    <div class="card" style="background:var(--paper);margin-bottom:14px;${noAnswer ? "border-color:var(--danger);" : ""}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <strong>Câu ${q.question_number}</strong>
+        <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removeQuestion(${i})">Xoá</button>
+      </div>
+      <label>Loại câu hỏi</label>
+      <select onchange="updateQuestion(${i}, 'question_type', this.value)">
+        <option value="mcq" ${q.question_type === "mcq" ? "selected" : ""}>Trắc nghiệm (MCQ)</option>
+        <option value="short_answer" ${q.question_type === "short_answer" ? "selected" : ""}>Trả lời ngắn</option>
+      </select>
+      <label>Nội dung câu hỏi</label>
+      <textarea style="min-height:60px" onchange="updateQuestion(${i}, 'question_text', this.value)">${escapeHtml(q.question_text)}</textarea>
+      ${q.question_type === "mcq" ? `
+        <label>Các lựa chọn (mỗi dòng 1 lựa chọn)</label>
+        <textarea style="min-height:80px" onchange="updateOptions(${i}, this.value)">${(q.options || []).join("\n")}</textarea>
+      ` : ""}
+      <label>Đáp án đúng ${noAnswer ? '<span style="color:var(--danger);font-weight:700;">⚠ CHƯA CÓ — điền tay vào đây</span>' : ""}</label>
+      <input type="text" style="${noAnswer ? "border-color:var(--danger);background:rgba(178,64,46,0.06);" : ""}" value="${escapeHtml(q.correct_answer || "")}" onchange="updateQuestion(${i}, 'correct_answer', this.value)" />
+    </div>
+  `;
+  }).join("");
+}
+
+function updateQuestion(i, field, value) {
+  questions[i][field] = value;
+  if (field === "question_type") renderQuestions();
+}
+function updateOptions(i, value) {
+  questions[i].options = value.split("\n").map(s => s.trim()).filter(Boolean);
+}
+function removeQuestion(i) {
+  questions.splice(i, 1);
+  renderQuestions();
+}
+function addQuestion() {
+  const nextNum = questions.length ? Math.max(...questions.map(q => q.question_number)) + 1 : 1;
+  questions.push({ question_number: nextNum, question_type: "short_answer", question_text: "", options: null, correct_answer: "" });
+  renderQuestions();
+}
+
+async function saveExam() {
+  const errEl = document.getElementById("saveError");
+  const okEl = document.getElementById("saveSuccess");
+  errEl.style.display = "none";
+  okEl.style.display = "none";
+
+  const title = document.getElementById("examTitle").value.trim();
+  if (!title) {
+    errEl.textContent = "Nhập tên đề thi trước đã.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (!questions.length) {
+    errEl.textContent = "Đề thi cần ít nhất 1 câu hỏi.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const missingAnswers = questions.filter(q => !q.correct_answer || !q.correct_answer.trim());
+  if (missingAnswers.length) {
+    const proceed = confirm(
+      `Còn ${missingAnswers.length} câu chưa có đáp án (câu ${missingAnswers.map(q => q.question_number).join(", ")}). ` +
+      `Vẫn lưu đề thi này? (học sinh làm bài sẽ luôn bị tính SAI ở các câu đó cho tới khi bạn sửa lại)`
+    );
+    if (!proceed) return;
+  }
+
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.textContent = "Đang lưu...";
+
+  try {
+    const res = await fetch(API_URL + "/exams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify({
+        title,
+        skill,
+        passage_text: document.getElementById("passageText").value,
+        questions,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Lưu đề thi thất bại");
+
+    okEl.textContent = "Đã lưu đề thi thành công! Học sinh có thể vào mục Luyện đề để làm bài.";
+    okEl.style.display = "block";
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Lưu đề thi →";
+  }
+}
+
+initAccess();
+</script>
+</body>
+</html>

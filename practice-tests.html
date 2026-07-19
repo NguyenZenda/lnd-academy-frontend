@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Luyện đề Reading/Listening – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <div class="side-menu-title">Khám phá LND Academy</div>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="content-studio.html" style="--d:4"><span class="icon">📣</span><div><h4>Content Studio</h4><p>Tạo & kiểm duyệt nội dung truyền thông (Giáo viên)</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:5"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:6"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Upload docx, AI tự tách câu hỏi & đáp án</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Luyện đề</div>
+  <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
+  <p id="pageDesc">Chọn 1 đề để làm thử — có cả câu trắc nghiệm và câu trả lời ngắn, chấm điểm ngay khi nộp bài.</p>
+</div>
+
+<main>
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="card">
+      <div class="task-toggle">
+        <button type="button" class="task-btn active" id="skillReadingBtn" onclick="setSkillFilter('reading')">📖 Reading</button>
+        <button type="button" class="task-btn" id="skillListeningBtn" onclick="setSkillFilter('listening')">🎧 Listening</button>
+      </div>
+      <div class="doc-list" id="examList">
+        <div class="empty-state">Đang tải danh sách đề thi...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAKE-EXAM VIEW -->
+  <div id="takeView" style="display:none;">
+    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToList()">← Quay lại danh sách</button>
+
+    <div class="card" id="passageCard">
+      <div class="card-label" id="passageLabel">Bài đọc</div>
+      <p id="passageText" style="white-space:pre-line;line-height:1.8;color:var(--ink);"></p>
+    </div>
+
+    <div id="questionsArea"></div>
+
+    <button class="btn btn-primary btn-block" id="submitBtn" onclick="submitExam()">Nộp bài →</button>
+    <div class="error-msg" id="submitError"></div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <div class="card-label">Kết quả</div>
+      <div class="overall-band" style="padding:20px;">
+        <div class="band-label">Điểm số</div>
+        <div class="band-score" id="scoreText" style="font-size:3rem;">0/0</div>
+      </div>
+      <div id="resultDetails"></div>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+let skillFilter = "reading";
+let currentExamId = null;
+let currentQuestions = [];
+
+function setSkillFilter(s) {
+  skillFilter = s;
+  document.getElementById("skillReadingBtn").classList.toggle("active", s === "reading");
+  document.getElementById("skillListeningBtn").classList.toggle("active", s === "listening");
+  loadExamList();
+}
+
+async function loadExamList() {
+  const listEl = document.getElementById("examList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải danh sách đề thi...</div>';
+  try {
+    const res = await fetch(API_URL + "/exams?skill=" + skillFilter);
+    const exams = await res.json();
+    if (!res.ok) throw new Error("Không tải được danh sách");
+
+    if (!exams.length) {
+      listEl.innerHTML = '<div class="empty-state">Chưa có đề thi nào trong mục này.</div>';
+      return;
+    }
+
+    listEl.innerHTML = exams.map(e => `
+      <div class="doc-item">
+        <div class="doc-info">
+          <h4>${escapeHtml(e.title)}</h4>
+          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span></div>
+        </div>
+        <div class="doc-actions">
+          <button class="btn btn-primary" onclick="openExam('${e.id}')">Làm bài</button>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function openExam(examId) {
+  currentExamId = examId;
+  try {
+    const res = await fetch(API_URL + "/exams/" + examId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không tải được đề thi");
+
+    document.getElementById("passageLabel").textContent = data.exam.skill === "reading" ? "Bài đọc" : "Transcript / Bài nghe";
+    document.getElementById("passageText").textContent = data.exam.passage_text || "(Không có nội dung bài đọc)";
+    currentQuestions = data.questions;
+    renderQuestions();
+
+    document.getElementById("resultCard").style.display = "none";
+    document.getElementById("submitBtn").style.display = "block";
+    document.getElementById("listView").style.display = "none";
+    document.getElementById("takeView").style.display = "block";
+    window.scrollTo(0, 0);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function renderQuestions() {
+  const area = document.getElementById("questionsArea");
+  area.innerHTML = currentQuestions.map(q => `
+    <div class="card">
+      <div class="card-label">Câu ${q.question_number}</div>
+      <p style="margin-bottom:14px;color:var(--ink);">${escapeHtml(q.question_text)}</p>
+      ${q.question_type === "mcq" ? `
+        <div id="q_${q.id}">
+          ${(q.options || []).map((opt, idx) => `
+            <label style="display:flex;align-items:center;gap:8px;font-weight:400;margin-bottom:8px;cursor:pointer;">
+              <input type="radio" name="q_${q.id}" value="${escapeHtml(opt)}" style="width:auto;margin:0;" />
+              ${escapeHtml(opt)}
+            </label>
+          `).join("")}
+        </div>
+      ` : `
+        <input type="text" id="q_${q.id}" placeholder="Nhập câu trả lời..." />
+      `}
+    </div>
+  `).join("");
+}
+
+function collectAnswers() {
+  const answers = {};
+  for (const q of currentQuestions) {
+    if (q.question_type === "mcq") {
+      const checked = document.querySelector(`input[name="q_${q.id}"]:checked`);
+      answers[q.id] = checked ? checked.value : "";
+    } else {
+      const input = document.getElementById(`q_${q.id}`);
+      answers[q.id] = input ? input.value.trim() : "";
+    }
+  }
+  return answers;
+}
+
+async function submitExam() {
+  const errEl = document.getElementById("submitError");
+  errEl.style.display = "none";
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Đang chấm điểm...";
+
+  try {
+    const answers = collectAnswers();
+    const res = await fetch(API_URL + "/exams/" + currentExamId + "/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Nộp bài thất bại");
+
+    showResult(data);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Nộp bài →";
+  }
+}
+
+function showResult(data) {
+  document.getElementById("scoreText").textContent = `${data.score}/${data.total}`;
+  document.getElementById("resultDetails").innerHTML = data.results.map(r => `
+    <div class="criterion-card" style="margin-bottom:10px;">
+      <div class="criterion-header">
+        <span class="criterion-name">Câu ${r.question_number}</span>
+        <span style="font-size:1.1rem;">${r.is_correct ? "✅" : "❌"}</span>
+      </div>
+      <div class="criterion-feedback">
+        Bạn trả lời: <strong>${escapeHtml(r.your_answer || "(bỏ trống)")}</strong><br/>
+        ${!r.is_correct ? "Đáp án đúng: <strong>" + escapeHtml(r.correct_answer) + "</strong>" : ""}
+      </div>
+    </div>
+  `).join("");
+  document.getElementById("resultCard").style.display = "block";
+  document.getElementById("submitBtn").style.display = "none";
+  document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
+}
+
+function backToList() {
+  document.getElementById("takeView").style.display = "none";
+  document.getElementById("listView").style.display = "block";
+  window.scrollTo(0, 0);
+}
+
+loadExamList();
+</script>
+</body>
+</html>
