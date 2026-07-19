@@ -27,9 +27,8 @@
   <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
   <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
   <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
-  <a class="side-menu-item" href="content-studio.html" style="--d:4"><span class="icon">📣</span><div><h4>Content Studio</h4><p>Tạo & kiểm duyệt nội dung truyền thông (Giáo viên)</p></div></a>
-  <a class="side-menu-item" href="practice-tests.html" style="--d:5"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
-  <a class="side-menu-item" href="exam-upload.html" style="--d:6"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Upload docx, AI tự tách câu hỏi & đáp án</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="exam-upload.html" style="--d:5"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Upload docx, AI tự tách câu hỏi & đáp án</p></div></a>
 </aside>
 
 <div class="hero">
@@ -55,6 +54,15 @@
   <!-- TAKE-EXAM VIEW -->
   <div id="takeView" style="display:none;">
     <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToList()">← Quay lại danh sách</button>
+
+    <div class="card" id="audioCard" style="display:none;text-align:center;">
+      <div class="card-label">🎧 Bài nghe — chỉ được nghe 1 lần duy nhất</div>
+      <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()" style="padding:14px 32px;font-size:1rem;">
+        ▶ Bắt đầu nghe
+      </button>
+      <p id="audioStatusText" style="margin-top:12px;color:var(--ink-soft);font-size:0.85rem;"></p>
+      <audio id="examAudioEl" style="display:none;"></audio>
+    </div>
 
     <div class="card" id="passageCard">
       <div class="card-label" id="passageLabel">Bài đọc</div>
@@ -83,6 +91,8 @@
 let skillFilter = "reading";
 let currentExamId = null;
 let currentQuestions = [];
+let currentExam = null;
+let audioHasPlayed = false;
 
 function setSkillFilter(s) {
   skillFilter = s;
@@ -127,11 +137,32 @@ async function openExam(examId) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Không tải được đề thi");
 
-    document.getElementById("passageLabel").textContent = data.exam.skill === "reading" ? "Bài đọc" : "Transcript / Bài nghe";
-    document.getElementById("passageText").textContent = data.exam.passage_text || "(Không có nội dung bài đọc)";
+    currentExam = data.exam;
     currentQuestions = data.questions;
-    renderQuestions();
+    audioHasPlayed = false;
 
+    const audioCard = document.getElementById("audioCard");
+    const passageCard = document.getElementById("passageCard");
+
+    if (currentExam.skill === "listening") {
+      audioCard.style.display = "block";
+      passageCard.style.display = "none"; // an transcript truoc khi lam bai
+      document.getElementById("playAudioBtn").disabled = false;
+      document.getElementById("playAudioBtn").textContent = "▶ Bắt đầu nghe";
+      document.getElementById("audioStatusText").textContent = "";
+      const audioEl = document.getElementById("examAudioEl");
+      audioEl.src = currentExam.audio_url || "";
+      audioEl.onended = () => {
+        document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
+      };
+    } else {
+      audioCard.style.display = "none";
+      passageCard.style.display = "block";
+      document.getElementById("passageLabel").textContent = "Bài đọc";
+      document.getElementById("passageText").textContent = currentExam.passage_text || "(Không có nội dung bài đọc)";
+    }
+
+    renderQuestions();
     document.getElementById("resultCard").style.display = "none";
     document.getElementById("submitBtn").style.display = "block";
     document.getElementById("listView").style.display = "none";
@@ -140,6 +171,20 @@ async function openExam(examId) {
   } catch (e) {
     alert(e.message);
   }
+}
+
+function playAudioOnce() {
+  if (audioHasPlayed) return;
+  const audioEl = document.getElementById("examAudioEl");
+  if (!audioEl.src) {
+    document.getElementById("audioStatusText").textContent = "Đề thi này chưa có file âm thanh.";
+    return;
+  }
+  audioHasPlayed = true;
+  document.getElementById("playAudioBtn").disabled = true;
+  document.getElementById("playAudioBtn").textContent = "🔊 Đang phát...";
+  document.getElementById("audioStatusText").textContent = "Đang phát — nghe kỹ, sẽ không phát lại được.";
+  audioEl.play();
 }
 
 function renderQuestions() {
@@ -221,10 +266,20 @@ function showResult(data) {
   `).join("");
   document.getElementById("resultCard").style.display = "block";
   document.getElementById("submitBtn").style.display = "none";
+
+  if (currentExam && currentExam.skill === "listening") {
+    document.getElementById("passageCard").style.display = "block";
+    document.getElementById("passageLabel").textContent = "Transcript (hiện sau khi nộp bài)";
+    document.getElementById("passageText").textContent = currentExam.passage_text || "(Không có transcript)";
+  }
+
   document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
 }
 
 function backToList() {
+  const audioEl = document.getElementById("examAudioEl");
+  audioEl.pause();
+  audioEl.src = "";
   document.getElementById("takeView").style.display = "none";
   document.getElementById("listView").style.display = "block";
   window.scrollTo(0, 0);
