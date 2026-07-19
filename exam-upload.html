@@ -45,7 +45,18 @@
 
   <div id="uploadSection" style="display:none;">
     <div class="card">
-      <div class="card-label">1. Upload file đề thi</div>
+      <div class="card-label">Đề thi đã tạo</div>
+      <div class="task-toggle">
+        <button type="button" class="task-btn active" id="manageReadingBtn" onclick="setManageSkill('reading')">📖 Reading</button>
+        <button type="button" class="task-btn" id="manageListeningBtn" onclick="setManageSkill('listening')">🎧 Listening</button>
+      </div>
+      <div class="doc-list" id="examManageList">
+        <div class="empty-state">Đang tải...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" id="createSectionLabel">Tạo đề mới</div>
       <div class="error-msg" id="parseError"></div>
 
       <label>Kỹ năng</label>
@@ -57,11 +68,11 @@
       <label for="examTitle">Tên đề thi</label>
       <input type="text" id="examTitle" placeholder="VD: IELTS Reading Practice Test 1" />
 
-      <label for="docxFile">File .docx (bài đọc/nghe + câu hỏi + đáp án)</label>
+      <label for="docxFile">File .docx (bài đọc/nghe + câu hỏi + đáp án) — bỏ qua nếu đang sửa đề có sẵn</label>
       <input type="file" id="docxFile" accept=".docx" />
 
       <div id="audioUploadSection" style="display:none;">
-        <label for="audioFile">File âm thanh (.mp3/.wav/.m4a) — bắt buộc cho đề Listening</label>
+        <label for="audioFile">File âm thanh (.mp3/.wav/.m4a) — chỉ chọn nếu muốn thay audio hiện tại</label>
         <input type="file" id="audioFile" accept="audio/*" />
       </div>
 
@@ -69,7 +80,7 @@
     </div>
 
     <div class="card" id="reviewCard" style="display:none;">
-      <div class="card-label">2. Kiểm tra & chỉnh sửa trước khi lưu</div>
+      <div class="card-label" id="reviewCardLabel">Kiểm tra & chỉnh sửa trước khi lưu</div>
 
       <label for="passageText">Bài đọc / Transcript</label>
       <div class="form-note">
@@ -95,6 +106,7 @@
 
       <button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="addQuestion()">+ Thêm 1 câu hỏi</button>
       <button class="btn btn-primary btn-block" id="saveBtn" onclick="saveExam()">Lưu đề thi →</button>
+      <button class="btn btn-ghost btn-block" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">Huỷ sửa, tạo đề mới thay vì cập nhật</button>
       <div class="error-msg" id="saveError"></div>
       <div class="success-msg" id="saveSuccess"></div>
     </div>
@@ -106,6 +118,9 @@
 <script>
 let skill = "reading";
 let questions = [];
+let editingExamId = null;
+let currentAudioUrl = null;
+let manageSkill = "reading";
 
 function setSkill(s) {
   skill = s;
@@ -121,9 +136,104 @@ function initAccess() {
   if (user && user.role === "admin") {
     denied.style.display = "none";
     section.style.display = "block";
+    loadManageList();
   } else {
     denied.style.display = "block";
     section.style.display = "none";
+  }
+}
+
+function setManageSkill(s) {
+  manageSkill = s;
+  document.getElementById("manageReadingBtn").classList.toggle("active", s === "reading");
+  document.getElementById("manageListeningBtn").classList.toggle("active", s === "listening");
+  loadManageList();
+}
+
+async function loadManageList() {
+  const listEl = document.getElementById("examManageList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải...</div>';
+  try {
+    const res = await fetch(API_URL + "/exams?skill=" + manageSkill);
+    const exams = await res.json();
+    if (!res.ok) throw new Error("Không tải được danh sách");
+
+    if (!exams.length) {
+      listEl.innerHTML = '<div class="empty-state">Chưa có đề nào trong mục này.</div>';
+      return;
+    }
+
+    listEl.innerHTML = exams.map(e => `
+      <div class="doc-item">
+        <div class="doc-info">
+          <h4>${escapeHtml(e.title)}</h4>
+          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span></div>
+        </div>
+        <div class="doc-actions">
+          <button class="btn btn-ghost" onclick="editExam('${e.id}')">Sửa</button>
+          <button class="btn btn-danger" onclick="deleteExamPrompt('${e.id}', '${escapeHtml(e.title).replace(/'/g, "\\\\'")}')">Xoá</button>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function editExam(examId) {
+  try {
+    const res = await fetch(API_URL + "/exams/" + examId + "/edit", {
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không tải được đề thi");
+
+    editingExamId = examId;
+    currentAudioUrl = data.exam.audio_url || null;
+    setSkill(data.exam.skill);
+    document.getElementById("examTitle").value = data.exam.title;
+    document.getElementById("passageText").value = data.exam.passage_text || "";
+    questions = (data.questions || []).sort((a, b) => a.question_number - b.question_number);
+    renderQuestions();
+
+    document.getElementById("createSectionLabel").textContent = `Đang sửa: ${data.exam.title}`;
+    document.getElementById("reviewCardLabel").textContent = "Kiểm tra & chỉnh sửa, rồi bấm Cập nhật";
+    document.getElementById("saveBtn").textContent = "Cập nhật đề thi →";
+    document.getElementById("reviewCard").style.display = "block";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    window.scrollTo({ top: document.getElementById("createSectionLabel").offsetTop - 20, behavior: "smooth" });
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function cancelEdit() {
+  editingExamId = null;
+  currentAudioUrl = null;
+  questions = [];
+  document.getElementById("examTitle").value = "";
+  document.getElementById("passageText").value = "";
+  document.getElementById("docxFile").value = "";
+  document.getElementById("createSectionLabel").textContent = "Tạo đề mới";
+  document.getElementById("reviewCardLabel").textContent = "Kiểm tra & chỉnh sửa trước khi lưu";
+  document.getElementById("saveBtn").textContent = "Lưu đề thi →";
+  document.getElementById("reviewCard").style.display = "none";
+  document.getElementById("cancelEditBtn").style.display = "none";
+}
+
+async function deleteExamPrompt(examId, title) {
+  if (!confirm(`Xoá hẳn đề "${title}"? Không thể hoàn tác.`)) return;
+  try {
+    const res = await fetch(API_URL + "/exams/" + examId, {
+      method: "DELETE",
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Xoá thất bại");
+    if (editingExamId === examId) cancelEdit();
+    loadManageList();
+  } catch (e) {
+    alert(e.message);
   }
 }
 
@@ -285,16 +395,17 @@ async function saveExam() {
   }
 
   const audioInput = document.getElementById("audioFile");
-  if (skill === "listening" && !audioInput.files[0]) {
+  if (skill === "listening" && !audioInput.files[0] && !editingExamId) {
     const proceedNoAudio = confirm("Chưa chọn file âm thanh cho đề Listening. Vẫn lưu đề mà không có audio?");
     if (!proceedNoAudio) return;
   }
 
+  const isEditing = !!editingExamId;
   const btn = document.getElementById("saveBtn");
   btn.disabled = true;
 
   try {
-    let audioUrl = null;
+    let audioUrl = isEditing ? (currentAudioUrl || null) : null;
     if (skill === "listening" && audioInput.files[0]) {
       btn.textContent = "Đang tải audio lên...";
       const audioForm = new FormData();
@@ -309,9 +420,11 @@ async function saveExam() {
       audioUrl = audioData.audio_url;
     }
 
-    btn.textContent = "Đang lưu...";
-    const res = await fetch(API_URL + "/exams", {
-      method: "POST",
+    btn.textContent = isEditing ? "Đang cập nhật..." : "Đang lưu...";
+    const url = isEditing ? (API_URL + "/exams/" + editingExamId) : (API_URL + "/exams");
+    const method = isEditing ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
       body: JSON.stringify({
         title,
@@ -322,16 +435,21 @@ async function saveExam() {
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Lưu đề thi thất bại");
+    if (!res.ok) throw new Error(data.detail || (isEditing ? "Cập nhật đề thi thất bại" : "Lưu đề thi thất bại"));
 
-    okEl.textContent = "Đã lưu đề thi thành công! Học sinh có thể vào mục Luyện đề để làm bài.";
+    okEl.textContent = isEditing
+      ? "Đã cập nhật đề thi thành công!"
+      : "Đã lưu đề thi thành công! Học sinh có thể vào mục Luyện đề để làm bài.";
     okEl.style.display = "block";
+
+    if (isEditing) cancelEdit();
+    loadManageList();
   } catch (e) {
     errEl.textContent = e.message;
     errEl.style.display = "block";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Lưu đề thi →";
+    btn.textContent = isEditing ? "Cập nhật đề thi →" : "Lưu đề thi →";
   }
 }
 
