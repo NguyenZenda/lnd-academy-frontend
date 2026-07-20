@@ -72,10 +72,10 @@ function renderNavAuth() {
   const el = document.getElementById("navAuth");
   const user = getUser();
 
-  const adminMenuItem = document.getElementById("adminMenuItem");
-  if (adminMenuItem) {
-    adminMenuItem.style.display = (user && user.role === "admin") ? "flex" : "none";
-  }
+  const adminMenuItems = document.querySelectorAll(".admin-only-menu");
+  adminMenuItems.forEach(el => {
+    el.style.display = (user && user.role === "admin") ? "flex" : "none";
+  });
 
   if (!el) return;
   if (user) {
