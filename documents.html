@@ -42,10 +42,15 @@
 
 <main>
   <div class="card">
-    <div class="filters">
-      <input type="text" id="filterSubject" placeholder="Lọc theo môn (VD: Toán)" />
-      <input type="text" id="filterGrade" placeholder="Lọc theo lớp (VD: 12)" />
-      <button class="btn btn-ghost" onclick="loadDocuments()">Lọc</button>
+    <div class="filters" style="align-items:flex-start;flex-wrap:wrap;">
+      <select id="filterSkill" style="max-width:200px;" onchange="loadDocuments()">
+        <option value="">Tất cả kỹ năng</option>
+        <option value="reading">Reading</option>
+        <option value="listening">Listening</option>
+        <option value="writing">Writing</option>
+        <option value="speaking">Speaking</option>
+      </select>
+      <div class="cefr-filter-group" id="cefrFilterGroup"></div>
       <div style="flex:1"></div>
       <button class="btn btn-primary" id="uploadOpenBtn" style="display:none;" onclick="openUploadModal()">+ Đăng tài liệu</button>
     </div>
@@ -68,11 +73,16 @@
       <label for="docTitle">Tên tài liệu</label>
       <input type="text" id="docTitle" required />
 
-      <label for="docSubject">Môn học</label>
-      <input type="text" id="docSubject" placeholder="VD: Toán, Ngữ Văn, Tiếng Anh..." />
+      <label for="docSkill">Kỹ năng</label>
+      <select id="docSkill" required>
+        <option value="reading">Reading</option>
+        <option value="listening">Listening</option>
+        <option value="writing">Writing</option>
+        <option value="speaking">Speaking</option>
+      </select>
 
-      <label for="docGrade">Lớp</label>
-      <input type="text" id="docGrade" placeholder="VD: 12" />
+      <label>Level (CEFR) — chọn được nhiều mức</label>
+      <div class="cefr-checkbox-group" id="docCefrGroup"></div>
 
       <label for="docFile">File tài liệu</label>
       <input type="file" id="docFile" required />
@@ -94,6 +104,9 @@ const CATEGORY_META = {
   thpt:  { tag: "Thư viện THPT", title: "Ôn thi THPT", desc: "Đề thi thử và tài liệu ôn tập theo môn, theo lớp." },
 };
 
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+let selectedFilterLevels = new Set();
+
 function initCategoryHeader() {
   const meta = CATEGORY_META[category] || CATEGORY_META.ielts;
   document.getElementById("categoryTag").textContent = meta.tag;
@@ -106,17 +119,42 @@ function initUploadButton() {
   document.getElementById("uploadOpenBtn").style.display = isTeacher() ? "inline-flex" : "none";
 }
 
+function renderCefrFilterGroup() {
+  const wrap = document.getElementById("cefrFilterGroup");
+  wrap.innerHTML = CEFR_LEVELS.map(lvl => `
+    <button type="button" class="cefr-chip" data-level="${lvl}" onclick="toggleFilterLevel('${lvl}')">${lvl}</button>
+  `).join("");
+}
+
+function toggleFilterLevel(level) {
+  if (selectedFilterLevels.has(level)) selectedFilterLevels.delete(level);
+  else selectedFilterLevels.add(level);
+  document.querySelectorAll("#cefrFilterGroup .cefr-chip").forEach(btn => {
+    btn.classList.toggle("active", selectedFilterLevels.has(btn.dataset.level));
+  });
+  loadDocuments();
+}
+
+function renderCefrUploadGroup() {
+  const wrap = document.getElementById("docCefrGroup");
+  wrap.innerHTML = CEFR_LEVELS.map(lvl => `
+    <label class="cefr-checkbox">
+      <input type="checkbox" value="${lvl}" />
+      <span>${lvl}</span>
+    </label>
+  `).join("");
+}
+
 async function loadDocuments() {
   const listEl = document.getElementById("docList");
   listEl.innerHTML = '<div class="empty-state">Đang tải danh sách tài liệu...</div>';
 
-  const subject = document.getElementById("filterSubject").value.trim();
-  const grade = document.getElementById("filterGrade").value.trim();
+  const skill = document.getElementById("filterSkill").value;
 
   const url = new URL(API_URL + "/documents");
   url.searchParams.set("category", category);
-  if (subject) url.searchParams.set("subject", subject);
-  if (grade) url.searchParams.set("grade", grade);
+  if (skill) url.searchParams.set("skill", skill);
+  if (selectedFilterLevels.size) url.searchParams.set("levels", Array.from(selectedFilterLevels).join(","));
 
   try {
     const res = await fetch(url);
@@ -133,8 +171,8 @@ async function loadDocuments() {
         <div class="doc-info">
           <h4>${escapeHtml(d.title)}</h4>
           <div class="doc-meta">
-            ${d.subject ? `<span class="doc-tag">${escapeHtml(d.subject)}</span>` : ""}
-            ${d.grade ? `<span class="doc-tag">Lớp ${escapeHtml(d.grade)}</span>` : ""}
+            ${d.skill ? `<span class="doc-tag">${escapeHtml(d.skill.charAt(0).toUpperCase() + d.skill.slice(1))}</span>` : ""}
+            ${(d.cefr_levels || []).map(l => `<span class="doc-tag" style="background:var(--paper);color:var(--green-800);border:1px solid var(--border);">${escapeHtml(l)}</span>`).join("")}
             <span>Đăng bởi ${escapeHtml(d.uploader_name || "Giáo viên LND")}</span>
           </div>
         </div>
@@ -149,10 +187,10 @@ async function loadDocuments() {
 }
 
 function openUploadModal() {
-  document.getElementById("uploadModal").style.display = "flex";
+  document.getElementById("uploadModal").classList.add("open");
 }
 function closeUploadModal() {
-  document.getElementById("uploadModal").style.display = "none";
+  document.getElementById("uploadModal").classList.remove("open");
 }
 
 document.getElementById("uploadForm").addEventListener("submit", async (e) => {
@@ -164,11 +202,13 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   btn.textContent = "Đang tải lên...";
 
   try {
+    const checkedLevels = Array.from(document.querySelectorAll("#docCefrGroup input:checked")).map(el => el.value);
+
     const formData = new FormData();
     formData.append("category", category);
     formData.append("title", document.getElementById("docTitle").value.trim());
-    formData.append("subject", document.getElementById("docSubject").value.trim());
-    formData.append("grade", document.getElementById("docGrade").value.trim());
+    formData.append("skill", document.getElementById("docSkill").value);
+    formData.append("cefr_levels", JSON.stringify(checkedLevels));
     formData.append("file", document.getElementById("docFile").files[0]);
 
     const res = await fetch(API_URL + "/documents/upload", {
@@ -193,6 +233,8 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
 
 initCategoryHeader();
 initUploadButton();
+renderCefrFilterGroup();
+renderCefrUploadGroup();
 loadDocuments();
 </script>
 </body>
