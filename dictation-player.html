@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dictation – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <a href="index.html" class="side-menu-title" onclick="closeMenu()">🏠 Khám phá LND Academy</a>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="dictation.html" style="--d:5"><span class="icon">🎧</span><div><h4>Dictation</h4><p>Nghe chép chính tả theo câu</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:6"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="exam-upload.html" style="--d:7;display:none;"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:8;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
+</aside>
+
+<main id="mainEl" style="max-width:760px;">
+  <button class="btn btn-ghost" style="margin:20px 0 16px;" onclick="location.href='dictation.html'">← Quay lại danh sách</button>
+
+  <div id="startScreen" class="card" style="text-align:center;">
+    <div class="card-label" id="startLevel">—</div>
+    <h2 id="startTitle" style="font-family:'Fraunces',serif;color:var(--green-900);margin-bottom:10px;">Đang tải...</h2>
+    <p id="startMeta" style="color:var(--ink-soft);margin-bottom:20px;"></p>
+    <button class="btn btn-primary" onclick="startPractice()">▶ Bắt đầu luyện tập</button>
+  </div>
+
+  <div id="practiceArea" style="display:none;">
+    <div class="dictation-video-wrap">
+      <div id="ytPlayer"></div>
+    </div>
+
+    <div class="dictation-progress">
+      <div class="dictation-progress-bar"><div id="progressFill" class="dictation-progress-fill"></div></div>
+      <span id="progressText">Câu 1/1 (0%)</span>
+    </div>
+
+    <div class="dictation-controls">
+      <button class="btn btn-ghost" onclick="playCurrentSentence()">▶ Nghe lại</button>
+      <button class="btn btn-ghost" onclick="goToPrevSentence()">⏮ Câu trước</button>
+      <button class="btn btn-ghost" onclick="showNextHintWord()">💡 Gợi ý</button>
+    </div>
+
+    <div class="card">
+      <div id="hintDisplay" class="hint-display"></div>
+      <textarea id="answerInput" style="min-height:70px" placeholder="Gõ lại câu bạn vừa nghe..."></textarea>
+      <div id="feedbackArea"></div>
+      <button class="btn btn-primary btn-block" id="actionBtn" onclick="handleActionButton()">Kiểm tra</button>
+
+      <div class="shortcut-legend">
+        <span><kbd>Enter</kbd> Kiểm tra / câu tiếp theo</span>
+        <span><kbd>Ctrl</kbd> Nghe lại câu trước</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Backspace</kbd> Xoá hết</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="completeCard" style="display:none;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:10px;">🎉</div>
+    <h3 style="font-family:'Fraunces',serif;color:var(--green-900);margin-bottom:8px;">Hoàn thành bài Dictation!</h3>
+    <p id="finalScoreText" style="color:var(--ink-soft);margin-bottom:20px;"></p>
+    <a class="btn btn-primary" href="dictation.html">← Quay lại danh sách</a>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const lessonId = params.get("id");
+
+let lesson = null;
+let sentences = [];
+let currentIndex = 0;
+let isChecked = false;
+let hintRevealCount = 0;
+let results = [];
+let ytPlayer = null;
+let ytReady = false;
+let checkTimer = null;
+let ctrlPressedAlone = true;
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+async function loadLesson() {
+  try {
+    const res = await fetch(API_URL + "/dictation/lessons/" + lessonId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không tải được bài dictation");
+
+    lesson = data.lesson;
+    sentences = data.sentences.sort((a, b) => a.sentence_number - b.sentence_number);
+
+    document.getElementById("startLevel").textContent = lesson.level || "Dictation";
+    document.getElementById("startTitle").textContent = lesson.title;
+    document.getElementById("startMeta").textContent =
+      `⏱ ${formatDuration(lesson.duration_seconds)} · 📝 ${sentences.length} câu`;
+  } catch (e) {
+    document.getElementById("startTitle").textContent = "Lỗi: " + e.message;
+  }
+}
+
+function startPractice() {
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("practiceArea").style.display = "block";
+  loadYouTubeAPI();
+}
+
+function loadYouTubeAPI() {
+  if (window.YT && window.YT.Player) {
+    initPlayer();
+    return;
+  }
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+  window.onYouTubeIframeAPIReady = initPlayer;
+}
+
+function initPlayer() {
+  ytPlayer = new YT.Player("ytPlayer", {
+    videoId: lesson.youtube_video_id,
+    playerVars: { rel: 0, modestbranding: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        renderSentenceUI();
+        playCurrentSentence();
+      },
+    },
+  });
+}
+
+function renderSentenceUI() {
+  isChecked = false;
+  hintRevealCount = 0;
+  const input = document.getElementById("answerInput");
+  input.value = "";
+  input.disabled = false;
+  document.getElementById("feedbackArea").innerHTML = "";
+  document.getElementById("hintDisplay").innerHTML = "";
+  document.getElementById("actionBtn").textContent = "Kiểm tra";
+  updateProgress();
+  input.focus();
+}
+
+function updateProgress() {
+  const total = sentences.length;
+  const pct = Math.round((currentIndex / total) * 100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressText").textContent = `Câu ${currentIndex + 1}/${total} (${pct}%)`;
+}
+
+function playCurrentSentence() {
+  const s = sentences[currentIndex];
+  if (!ytPlayer || !s || !ytReady) return;
+  clearInterval(checkTimer);
+  ytPlayer.seekTo(s.start_time, true);
+  ytPlayer.playVideo();
+  checkTimer = setInterval(() => {
+    if (ytPlayer.getCurrentTime && ytPlayer.getCurrentTime() >= s.end_time) {
+      ytPlayer.pauseVideo();
+      clearInterval(checkTimer);
+    }
+  }, 150);
+}
+
+function goToPrevSentence() {
+  if (currentIndex === 0) {
+    playCurrentSentence();
+    return;
+  }
+  currentIndex--;
+  renderSentenceUI();
+  playCurrentSentence();
+}
+
+function normalizeText(t) {
+  return t.toLowerCase().replace(/[.,!?;:"“”'’]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function checkAnswer() {
+  const s = sentences[currentIndex];
+  const userAns = document.getElementById("answerInput").value;
+  const correctNorm = normalizeText(s.text);
+  const userNorm = normalizeText(userAns);
+  const isCorrect = correctNorm === userNorm && userNorm.length > 0;
+
+  const correctWords = s.text.trim().split(/\s+/);
+  const userWordsNorm = userNorm.split(/\s+/);
+  const correctWordsNorm = correctNorm.split(/\s+/);
+
+  const diffHtml = correctWords.map((w, i) => {
+    const match = userWordsNorm[i] !== undefined && userWordsNorm[i] === correctWordsNorm[i];
+    return `<span class="${match ? "diff-correct" : "diff-wrong"}">${escapeHtml(w)}</span>`;
+  }).join(" ");
+
+  document.getElementById("feedbackArea").innerHTML = `
+    <div class="dictation-feedback ${isCorrect ? "correct" : "incorrect"}">
+      <strong>${isCorrect ? "✅ Chính xác!" : "❌ Chưa đúng hoàn toàn — câu đúng:"}</strong>
+      <p class="diff-line">${diffHtml}</p>
+    </div>
+  `;
+  document.getElementById("answerInput").disabled = true;
+  document.getElementById("actionBtn").textContent =
+    currentIndex < sentences.length - 1 ? "Câu tiếp theo →" : "Hoàn thành →";
+  isChecked = true;
+
+  results.push({
+    sentence_number: s.sentence_number,
+    is_correct: isCorrect,
+    your_answer: userAns,
+    correct_text: s.text,
+  });
+}
+
+function goToNextSentence() {
+  if (currentIndex < sentences.length - 1) {
+    currentIndex++;
+    renderSentenceUI();
+    playCurrentSentence();
+  } else {
+    finishLesson();
+  }
+}
+
+function handleActionButton() {
+  if (!isChecked) checkAnswer();
+  else goToNextSentence();
+}
+
+function showNextHintWord() {
+  const s = sentences[currentIndex];
+  const words = s.text.trim().split(/\s+/);
+  if (hintRevealCount < words.length) hintRevealCount++;
+  const revealed = words.slice(0, hintRevealCount).join(" ");
+  const remaining = words.length - hintRevealCount;
+  document.getElementById("hintDisplay").innerHTML =
+    `<span class="hint-revealed">${escapeHtml(revealed)}</span>` +
+    (remaining > 0 ? ` <span class="hint-remaining">${"▁ ".repeat(remaining)}</span>` : "");
+}
+
+async function finishLesson() {
+  clearInterval(checkTimer);
+  document.getElementById("practiceArea").style.display = "none";
+  const correctCount = results.filter(r => r.is_correct).length;
+  document.getElementById("completeCard").style.display = "block";
+  document.getElementById("finalScoreText").textContent =
+    `Bạn làm đúng ${correctCount}/${sentences.length} câu.`;
+
+  try {
+    await fetch(API_URL + "/dictation/lessons/" + lessonId + "/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
+      body: JSON.stringify({ correct_count: correctCount, total: sentences.length, results }),
+    });
+  } catch (e) { /* im lang, khong lam gian doan trai nghiem hoc */ }
+}
+
+document.addEventListener("keydown", (e) => {
+  const input = document.getElementById("answerInput");
+  if (document.activeElement !== input) return;
+  handleAnswerKeydown(e);
+});
+
+function handleAnswerKeydown(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleActionButton();
+  } else if (e.key === "Backspace" && e.ctrlKey) {
+    e.preventDefault();
+    e.target.value = "";
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key !== "Control") {
+    ctrlPressedAlone = false;
+  }
+});
+document.addEventListener("keyup", (e) => {
+  if (e.key === "Control") {
+    if (ctrlPressedAlone && document.getElementById("practiceArea").style.display !== "none") {
+      goToPrevSentence();
+    }
+    ctrlPressedAlone = true;
+  }
+});
+
+loadLesson();
+</script>
+</body>
+</html>
