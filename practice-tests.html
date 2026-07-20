@@ -137,6 +137,26 @@
   </div>
 </main>
 
+<div class="modal-overlay" id="modeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Chọn chế độ làm bài</h3>
+      <button class="modal-close" onclick="closeModeModal()">✕</button>
+    </div>
+    <div class="time-option-list">
+      <label class="time-option">
+        <input type="radio" name="modeChoice" value="test" checked />
+        <div><strong>📝 Kiểm tra (Test Mode)</strong><p>Không có công cụ hỗ trợ (từ điển, highlight...) — giống điều kiện thi thật.</p></div>
+      </label>
+      <label class="time-option">
+        <input type="radio" name="modeChoice" value="practice" />
+        <div><strong>📖 Luyện tập (Practice Mode)</strong><p>Có đầy đủ công cụ hỗ trợ trong lúc làm bài.</p></div>
+      </label>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="confirmModeChoice()">Tiếp tục →</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="timerModal">
   <div class="modal">
     <div class="modal-header">
@@ -146,7 +166,7 @@
     <div class="time-option-list">
       <label class="time-option">
         <input type="radio" name="timeChoice" value="unlimited" checked />
-        <div><strong>Không giới hạn</strong><p>Làm thoải mái, không đếm giờ</p></div>
+        <div><strong>Unlimited</strong><p>Làm thoải mái, không đếm giờ</p></div>
       </label>
       <label class="time-option">
         <input type="radio" name="timeChoice" value="extended" />
@@ -173,6 +193,7 @@ let currentExamId = null;
 let currentQuestions = [];
 let currentExam = null;
 let currentGroups = [];
+let currentExamMode = "test"; // "test" | "practice" - dung de an/hien cong cu ho tro (tu dien, highlight) sau nay
 let currentParts = [];
 let activePartId = null;
 let lastFocusedBlank = null;
@@ -221,8 +242,19 @@ async function loadExamList() {
 }
 
 // ---------- Buoc 1: chon thoi gian lam bai ----------
+let pendingExamMode = "test";
+
 function openTimerModal(examId) {
   pendingExamId = examId;
+  document.getElementById("modeModal").classList.add("open");
+}
+function closeModeModal() {
+  document.getElementById("modeModal").classList.remove("open");
+  pendingExamId = null;
+}
+function confirmModeChoice() {
+  pendingExamMode = document.querySelector('input[name="modeChoice"]:checked').value;
+  document.getElementById("modeModal").classList.remove("open");
   document.getElementById("timerModal").classList.add("open");
 }
 function closeTimerModal() {
@@ -234,13 +266,15 @@ function confirmTimerChoice() {
   const durationMap = { unlimited: null, extended: 72 * 60, standard: 60 * 60, hardcore: 50 * 60 };
   const seconds = durationMap[choice];
   const examId = pendingExamId;
+  const mode = pendingExamMode;
   document.getElementById("timerModal").classList.remove("open");
   pendingExamId = null;
-  openExam(examId, seconds);
+  openExam(examId, seconds, mode);
 }
 
 // ---------- Buoc 2: mo de thi va bat dau lam ----------
-async function openExam(examId, durationSeconds) {
+async function openExam(examId, durationSeconds, mode) {
+  currentExamMode = mode || "test";
   currentExamId = examId;
   try {
     const res = await fetch(API_URL + "/exams/" + examId);
