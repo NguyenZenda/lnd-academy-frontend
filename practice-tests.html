@@ -187,6 +187,7 @@
 
 <script src="auth.js"></script>
 <script src="chat-widget.js"></script>
+<script src="lookup-tool.js"></script>
 <script>
 let skillFilter = "reading";
 let currentExamId = null;
@@ -275,6 +276,7 @@ function confirmTimerChoice() {
 // ---------- Buoc 2: mo de thi va bat dau lam ----------
 async function openExam(examId, durationSeconds, mode) {
   currentExamMode = mode || "test";
+  window.LND_DISABLE_LOOKUP_TOOL = (currentExamMode !== "practice");
   currentExamId = examId;
   try {
     const res = await fetch(API_URL + "/exams/" + examId);
