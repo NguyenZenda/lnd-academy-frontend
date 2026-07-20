@@ -141,23 +141,10 @@ nav .btn-primary:hover { background: var(--green-500); }
 nav .btn-ghost { border-color: var(--border); color: var(--ink); }
 nav .btn-ghost:hover { border-color: var(--green-600); color: var(--green-600); }
 
-/* ---------- HERO (organic blob accent) ---------- */
+/* ---------- HERO (flat, clean) ---------- */
 .hero {
-  position: relative; text-align: center; padding: 76px 24px 52px;
-  max-width: 780px; margin: 0 auto; overflow: hidden; isolation: isolate;
-}
-.hero::before, .hero::after {
-  content: ""; position: absolute; z-index: -1; border-radius: 50%;
-  filter: blur(50px); opacity: 0.55;
-}
-.hero::before {
-  width: 340px; height: 300px; background: var(--green-300);
-  top: -120px; left: 8%; border-radius: 42% 58% 65% 35% / 45% 45% 55% 55%;
-}
-.hero::after {
-  width: 280px; height: 260px; background: var(--green-500);
-  top: -60px; right: 6%; opacity: 0.35;
-  border-radius: 60% 40% 35% 65% / 55% 60% 40% 45%;
+  position: relative; text-align: center; padding: 64px 24px 44px;
+  max-width: 780px; margin: 0 auto;
 }
 .hero-tag {
   display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 1.6px;
@@ -611,6 +598,31 @@ textarea { line-height: 1.7; resize: vertical; }
   overflow: hidden; margin-bottom: 18px; background: #000; box-shadow: var(--shadow);
 }
 .dictation-video-wrap iframe, .dictation-video-wrap #ytPlayer { width: 100%; height: 100%; }
+
+.dictation-split { display: flex; align-items: stretch; gap: 20px; }
+.dictation-split-left { flex: 0 0 58%; min-width: 0; }
+
+/* ---------- CEFR level filter/selection UI ---------- */
+.cefr-filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.cefr-chip {
+  padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--ink-soft); font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.cefr-chip:hover { border-color: var(--green-500); }
+.cefr-chip.active { background: var(--green-600); border-color: var(--green-600); color: #fff; }
+
+.cefr-checkbox-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.cefr-checkbox {
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--paper); cursor: pointer; font-weight: 600; font-size: 0.85rem;
+}
+.cefr-checkbox input { width: auto; margin: 0; accent-color: var(--green-600); }
+.dictation-split-right { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 860px) {
+  .dictation-split { flex-direction: column; }
+  .dictation-split-left, .dictation-split-right { flex: none; width: 100%; }
+}
 
 .dictation-progress { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
 .dictation-progress-bar { flex: 1; height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
