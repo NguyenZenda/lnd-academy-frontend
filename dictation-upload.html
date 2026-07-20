@@ -70,6 +70,12 @@
       </select>
 
       <button class="btn btn-primary btn-block" id="fetchBtn" onclick="fetchTranscript()">Lấy transcript & tách câu →</button>
+
+      <div class="form-note" style="margin-top:16px;">
+        Nếu bị lỗi "YouTube đang chặn IP của server" → dùng app local (<code>dictation_transcript_app.py</code>) để lấy transcript, tải về file <code>.json</code>, rồi import file đó vào đây:
+      </div>
+      <label for="importJsonFile">Import file JSON đã tải về</label>
+      <input type="file" id="importJsonFile" accept=".json" onchange="loadFromJsonFile(event)" />
     </div>
 
     <div class="card" id="reviewCard" style="display:none;">
@@ -173,6 +179,36 @@ async function fetchTranscript() {
     btn.disabled = false;
     btn.textContent = "Lấy transcript & tách câu →";
   }
+}
+
+function loadFromJsonFile(event) {
+  const errEl = document.getElementById("fetchError");
+  errEl.style.display = "none";
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.video_id || !Array.isArray(data.sentences)) {
+        throw new Error("File thiếu 'video_id' hoặc 'sentences' — dùng đúng file tải từ app local.");
+      }
+      fetchedVideoId = data.video_id;
+      sentences = data.sentences;
+      renderSentences();
+      document.getElementById("reviewCard").style.display = "block";
+      window.scrollTo({ top: document.getElementById("reviewCard").offsetTop - 20, behavior: "smooth" });
+    } catch (err) {
+      errEl.textContent = "File JSON không hợp lệ: " + err.message;
+      errEl.style.display = "block";
+    }
+  };
+  reader.onerror = () => {
+    errEl.textContent = "Không đọc được file.";
+    errEl.style.display = "block";
+  };
+  reader.readAsText(file);
 }
 
 function renderSentences() {
