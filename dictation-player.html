@@ -34,7 +34,7 @@
   <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:8;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
 </aside>
 
-<main id="mainEl" style="max-width:760px;">
+<main id="mainEl" style="max-width:1100px;">
   <button class="btn btn-ghost" style="margin:20px 0 16px;" onclick="location.href='dictation.html'">← Quay lại danh sách</button>
 
   <div id="startScreen" class="card" style="text-align:center;">
@@ -45,31 +45,36 @@
   </div>
 
   <div id="practiceArea" style="display:none;">
-    <div class="dictation-video-wrap">
-      <div id="ytPlayer"></div>
-    </div>
-
     <div class="dictation-progress">
       <div class="dictation-progress-bar"><div id="progressFill" class="dictation-progress-fill"></div></div>
       <span id="progressText">Câu 1/1 (0%)</span>
     </div>
 
-    <div class="dictation-controls">
-      <button class="btn btn-ghost" onclick="playCurrentSentence()">▶ Nghe lại</button>
-      <button class="btn btn-ghost" onclick="goToPrevSentence()">⏮ Câu trước</button>
-      <button class="btn btn-ghost" onclick="showNextHintWord()">💡 Gợi ý</button>
-    </div>
+    <div class="dictation-split">
+      <div class="dictation-split-left">
+        <div class="dictation-video-wrap">
+          <div id="ytPlayer"></div>
+        </div>
+        <div class="dictation-controls">
+          <button class="btn btn-ghost" onclick="playCurrentSentence()">▶ Nghe lại</button>
+          <button class="btn btn-ghost" onclick="goToPrevSentence()">⏮ Câu trước</button>
+          <button class="btn btn-ghost" onclick="showNextHintWord()">💡 Gợi ý</button>
+        </div>
+      </div>
 
-    <div class="card">
-      <div id="hintDisplay" class="hint-display"></div>
-      <textarea id="answerInput" style="min-height:70px" placeholder="Gõ lại câu bạn vừa nghe..."></textarea>
-      <div id="feedbackArea"></div>
-      <button class="btn btn-primary btn-block" id="actionBtn" onclick="handleActionButton()">Kiểm tra</button>
+      <div class="dictation-split-right">
+        <div class="card" style="height:100%;margin-bottom:0;display:flex;flex-direction:column;">
+          <div id="hintDisplay" class="hint-display"></div>
+          <textarea id="answerInput" style="flex:1;min-height:160px;font-size:1.1rem;" placeholder="Gõ lại câu bạn vừa nghe..."></textarea>
+          <div id="feedbackArea"></div>
+          <button class="btn btn-primary btn-block" id="actionBtn" onclick="handleActionButton()">Kiểm tra</button>
 
-      <div class="shortcut-legend">
-        <span><kbd>Enter</kbd> Kiểm tra / câu tiếp theo</span>
-        <span><kbd>Ctrl</kbd> Nghe lại câu trước</span>
-        <span><kbd>Ctrl</kbd>+<kbd>Backspace</kbd> Xoá hết</span>
+          <div class="shortcut-legend">
+            <span><kbd>Enter</kbd> Kiểm tra / câu tiếp theo</span>
+            <span><kbd>Ctrl</kbd> Nghe lại câu trước</span>
+            <span><kbd>Ctrl</kbd>+<kbd>Backspace</kbd> Xoá hết</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
