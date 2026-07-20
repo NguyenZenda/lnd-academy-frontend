@@ -605,6 +605,44 @@ textarea { line-height: 1.7; resize: vertical; }
 .dictation-card-body h4 { font-size: 0.95rem; color: var(--green-900); margin: 8px 0 8px; font-weight: 600; line-height: 1.4; }
 .dictation-meta { display: flex; gap: 14px; font-size: 0.8rem; color: var(--ink-soft); }
 
+/* ---------- Dictation practice interface ---------- */
+.dictation-video-wrap {
+  position: relative; width: 100%; aspect-ratio: 16/9; border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 18px; background: #000; box-shadow: var(--shadow);
+}
+.dictation-video-wrap iframe, .dictation-video-wrap #ytPlayer { width: 100%; height: 100%; }
+
+.dictation-progress { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.dictation-progress-bar { flex: 1; height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
+.dictation-progress-fill { height: 100%; background: linear-gradient(90deg, var(--green-600), var(--green-500)); border-radius: 999px; transition: width 0.4s ease; }
+.dictation-progress span { font-size: 0.85rem; font-weight: 600; color: var(--green-800); white-space: nowrap; }
+
+.dictation-controls { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.dictation-controls .btn { flex: 1; min-width: 130px; }
+
+.hint-display {
+  min-height: 28px; font-size: 1.05rem; line-height: 1.8; margin-bottom: 12px;
+  font-family: 'Fraunces', serif; color: var(--green-800);
+}
+.hint-revealed { color: var(--green-800); font-weight: 600; }
+.hint-remaining { color: var(--border); letter-spacing: 2px; }
+
+.dictation-feedback { margin-top: 14px; padding: 14px 16px; border-radius: var(--radius-sm); }
+.dictation-feedback.correct { background: rgba(90,138,34,0.10); border: 1px solid var(--green-500); }
+.dictation-feedback.incorrect { background: rgba(178,64,46,0.08); border: 1px solid rgba(178,64,46,0.3); }
+.diff-line { margin-top: 8px; font-size: 0.98rem; line-height: 1.8; }
+.diff-correct { color: var(--green-700, var(--green-800)); }
+.diff-wrong { color: var(--danger); text-decoration: underline; text-decoration-style: wavy; }
+
+.shortcut-legend {
+  display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--ink-soft);
+}
+.shortcut-legend kbd {
+  background: var(--paper); border: 1px solid var(--border); border-bottom-width: 2px;
+  border-radius: 5px; padding: 2px 7px; font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--ink);
+}
+
 .matching-table-card { overflow-x: auto; }
 .matching-table-wrap { overflow-x: auto; }
 .matching-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
