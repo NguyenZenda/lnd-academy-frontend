@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dictation – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <a href="index.html" class="side-menu-title" onclick="closeMenu()">🏠 Khám phá LND Academy</a>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="dictation.html" style="--d:5"><span class="icon">🎧</span><div><h4>Dictation</h4><p>Nghe chép chính tả theo câu</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:6"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="exam-upload.html" style="--d:7;display:none;"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:8;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Dictation</div>
+  <h1>Nghe chép chính tả</h1>
+  <p>Chọn 1 bài để luyện — nghe từng câu, gõ lại đúng những gì bạn nghe được, có gợi ý nếu bí.</p>
+</div>
+
+<main>
+  <div class="card">
+    <div class="task-toggle">
+      <button type="button" class="task-btn active" id="levelAllBtn" onclick="setLevelFilter('')">Tất cả</button>
+      <button type="button" class="task-btn" id="levelBeginnerBtn" onclick="setLevelFilter('Beginner')">Beginner</button>
+      <button type="button" class="task-btn" id="levelIntermediateBtn" onclick="setLevelFilter('Intermediate')">Intermediate</button>
+      <button type="button" class="task-btn" id="levelAdvancedBtn" onclick="setLevelFilter('Advanced')">Advanced</button>
+    </div>
+    <div class="dictation-grid" id="lessonGrid">
+      <div class="empty-state">Đang tải danh sách bài dictation...</div>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+let levelFilter = "";
+
+function setLevelFilter(level) {
+  levelFilter = level;
+  document.getElementById("levelAllBtn").classList.toggle("active", level === "");
+  document.getElementById("levelBeginnerBtn").classList.toggle("active", level === "Beginner");
+  document.getElementById("levelIntermediateBtn").classList.toggle("active", level === "Intermediate");
+  document.getElementById("levelAdvancedBtn").classList.toggle("active", level === "Advanced");
+  loadLessons();
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+async function loadLessons() {
+  const grid = document.getElementById("lessonGrid");
+  grid.innerHTML = '<div class="empty-state">Đang tải danh sách bài dictation...</div>';
+  try {
+    const url = new URL(API_URL + "/dictation/lessons");
+    if (levelFilter) url.searchParams.set("level", levelFilter);
+    const res = await fetch(url);
+    const lessons = await res.json();
+    if (!res.ok) throw new Error("Không tải được danh sách");
+
+    if (!lessons.length) {
+      grid.innerHTML = '<div class="empty-state">Chưa có bài dictation nào trong mục này.</div>';
+      return;
+    }
+
+    grid.innerHTML = lessons.map(l => `
+      <a class="dictation-card" href="dictation-player.html?id=${l.id}">
+        <img class="dictation-thumb" src="https://img.youtube.com/vi/${l.youtube_video_id}/mqdefault.jpg" alt="${escapeHtml(l.title)}" />
+        <div class="dictation-card-body">
+          <span class="doc-tag">${escapeHtml(l.level || "")}</span>
+          <h4>${escapeHtml(l.title)}</h4>
+          <div class="dictation-meta">
+            <span>⏱ ${formatDuration(l.duration_seconds)}</span>
+            <span>📝 ${l.sentence_count} câu</span>
+          </div>
+        </div>
+      </a>
+    `).join("");
+  } catch (e) {
+    grid.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+loadLessons();
+</script>
+</body>
+</html>

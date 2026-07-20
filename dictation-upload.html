@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tạo bài Dictation – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <a href="index.html" class="side-menu-title" onclick="closeMenu()">🏠 Khám phá LND Academy</a>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="dictation.html" style="--d:5"><span class="icon">🎧</span><div><h4>Dictation</h4><p>Nghe chép chính tả theo câu</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:6"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="exam-upload.html" style="--d:7;display:none;"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:8;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Admin</div>
+  <h1>Tạo bài Dictation từ YouTube</h1>
+  <p>Dán link video YouTube có phụ đề tiếng Anh — hệ thống tự lấy transcript và tách thành từng câu kèm mốc thời gian, bạn kiểm tra/sửa lại trước khi lưu.</p>
+</div>
+
+<main>
+  <div id="accessDenied" class="card" style="display:none;text-align:center;">
+    <p style="color:var(--ink-soft);">Trang này chỉ dành cho tài khoản <strong>Admin</strong>.</p>
+    <div style="margin-top:16px;"><a class="btn btn-primary" href="login.html">Đăng nhập</a></div>
+  </div>
+
+  <div id="uploadSection" style="display:none;">
+    <div class="card">
+      <div class="card-label">Bài dictation đã tạo</div>
+      <div class="doc-list" id="lessonManageList"><div class="empty-state">Đang tải...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label" id="createSectionLabel">Tạo bài mới</div>
+      <div class="error-msg" id="fetchError"></div>
+
+      <label for="youtubeUrl">Link video YouTube</label>
+      <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
+
+      <label for="lessonTitle">Tên bài</label>
+      <input type="text" id="lessonTitle" placeholder="VD: Daily Conversation - Ordering Food" />
+
+      <label>Level</label>
+      <select id="lessonLevel">
+        <option value="Beginner">Beginner</option>
+        <option value="Intermediate" selected>Intermediate</option>
+        <option value="Advanced">Advanced</option>
+      </select>
+
+      <button class="btn btn-primary btn-block" id="fetchBtn" onclick="fetchTranscript()">Lấy transcript & tách câu →</button>
+    </div>
+
+    <div class="card" id="reviewCard" style="display:none;">
+      <div class="card-label" id="reviewCardLabel">Kiểm tra & chỉnh sửa từng câu trước khi lưu</div>
+      <div class="form-note">Có thể sửa lại text (nếu transcript sai chính tả), hoặc chỉnh mốc thời gian bắt đầu/kết thúc (giây) nếu audio dừng chưa đúng chỗ.</div>
+      <div id="sentencesList"></div>
+      <button class="btn btn-primary btn-block" id="saveLessonBtn" onclick="saveLesson()">Lưu bài Dictation →</button>
+      <button class="btn btn-ghost btn-block" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">Huỷ sửa, tạo bài mới thay vì cập nhật</button>
+      <div class="error-msg" id="saveError"></div>
+      <div class="success-msg" id="saveSuccess"></div>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+let sentences = [];
+let fetchedVideoId = "";
+let editingLessonId = null;
+
+function initAccess() {
+  const user = getUser();
+  const denied = document.getElementById("accessDenied");
+  const section = document.getElementById("uploadSection");
+  if (user && user.role === "admin") {
+    denied.style.display = "none";
+    section.style.display = "block";
+    loadManageList();
+  } else {
+    denied.style.display = "block";
+    section.style.display = "none";
+  }
+}
+
+async function loadManageList() {
+  const listEl = document.getElementById("lessonManageList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải...</div>';
+  try {
+    const res = await fetch(API_URL + "/dictation/lessons");
+    const lessons = await res.json();
+    if (!res.ok) throw new Error("Không tải được danh sách");
+
+    if (!lessons.length) {
+      listEl.innerHTML = '<div class="empty-state">Chưa có bài dictation nào.</div>';
+      return;
+    }
+
+    listEl.innerHTML = lessons.map(l => `
+      <div class="doc-item">
+        <div class="doc-info">
+          <h4>${escapeHtml(l.title)}</h4>
+          <div class="doc-meta">
+            <span class="doc-tag">${escapeHtml(l.level || "")}</span>
+            <span>${Math.round(l.duration_seconds / 60)} phút</span>
+            <span>${l.sentence_count} câu</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <button class="btn btn-ghost" onclick="editLesson('${l.id}')">Sửa</button>
+          <button class="btn btn-danger" onclick="deleteLessonPrompt('${l.id}', '${escapeHtml(l.title).replace(/'/g, "\\\\'")}')">Xoá</button>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function fetchTranscript() {
+  const url = document.getElementById("youtubeUrl").value.trim();
+  const errEl = document.getElementById("fetchError");
+  errEl.style.display = "none";
+  if (!url) {
+    errEl.textContent = "Dán link YouTube trước đã.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("fetchBtn");
+  btn.disabled = true;
+  btn.textContent = "Đang lấy transcript...";
+
+  try {
+    const res = await fetch(API_URL + "/dictation/fetch-transcript", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
+      body: JSON.stringify({ youtube_url: url }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Lấy transcript thất bại");
+
+    fetchedVideoId = data.video_id;
+    sentences = data.sentences;
+    renderSentences();
+    document.getElementById("reviewCard").style.display = "block";
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Lấy transcript & tách câu →";
+  }
+}
+
+function renderSentences() {
+  const list = document.getElementById("sentencesList");
+  list.innerHTML = sentences.map((s, i) => `
+    <div class="card" style="background:var(--paper);margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong>Câu ${s.sentence_number}</strong>
+        <button class="btn btn-danger" style="padding:4px 12px;font-size:0.78rem;" onclick="removeSentence(${i})">Xoá</button>
+      </div>
+      <textarea style="min-height:50px" onchange="updateSentence(${i}, 'text', this.value)">${escapeHtml(s.text)}</textarea>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label>Bắt đầu (giây)</label>
+          <input type="number" step="0.1" value="${s.start_time}" onchange="updateSentence(${i}, 'start_time', parseFloat(this.value))" />
+        </div>
+        <div style="flex:1;">
+          <label>Kết thúc (giây)</label>
+          <input type="number" step="0.1" value="${s.end_time}" onchange="updateSentence(${i}, 'end_time', parseFloat(this.value))" />
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function updateSentence(i, field, value) {
+  sentences[i][field] = value;
+}
+function removeSentence(i) {
+  sentences.splice(i, 1);
+  sentences.forEach((s, idx) => { s.sentence_number = idx + 1; });
+  renderSentences();
+}
+
+async function saveLesson() {
+  const errEl = document.getElementById("saveError");
+  const okEl = document.getElementById("saveSuccess");
+  errEl.style.display = "none";
+  okEl.style.display = "none";
+
+  const title = document.getElementById("lessonTitle").value.trim();
+  if (!title) {
+    errEl.textContent = "Nhập tên bài trước đã.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (!sentences.length) {
+    errEl.textContent = "Cần ít nhất 1 câu.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const isEditing = !!editingLessonId;
+  const btn = document.getElementById("saveLessonBtn");
+  btn.disabled = true;
+  btn.textContent = isEditing ? "Đang cập nhật..." : "Đang lưu...";
+
+  try {
+    const url = isEditing ? (API_URL + "/dictation/lessons/" + editingLessonId) : (API_URL + "/dictation/lessons");
+    const method = isEditing ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
+      body: JSON.stringify({
+        title,
+        youtube_video_id: fetchedVideoId,
+        level: document.getElementById("lessonLevel").value,
+        sentences,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Lưu thất bại");
+
+    okEl.textContent = isEditing ? "Đã cập nhật bài dictation!" : "Đã lưu bài dictation thành công!";
+    okEl.style.display = "block";
+    if (isEditing) cancelEdit();
+    loadManageList();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isEditing ? "Cập nhật đề thi →" : "Lưu bài Dictation →";
+  }
+}
+
+async function editLesson(lessonId) {
+  try {
+    const res = await fetch(API_URL + "/dictation/lessons/" + lessonId + "/edit", {
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không tải được bài");
+
+    editingLessonId = lessonId;
+    fetchedVideoId = data.lesson.youtube_video_id;
+    document.getElementById("youtubeUrl").value = `https://www.youtube.com/watch?v=${fetchedVideoId}`;
+    document.getElementById("lessonTitle").value = data.lesson.title;
+    document.getElementById("lessonLevel").value = data.lesson.level || "Intermediate";
+    sentences = data.sentences.sort((a, b) => a.sentence_number - b.sentence_number);
+    renderSentences();
+
+    document.getElementById("createSectionLabel").textContent = `Đang sửa: ${data.lesson.title}`;
+    document.getElementById("reviewCardLabel").textContent = "Kiểm tra & chỉnh sửa, rồi bấm Cập nhật";
+    document.getElementById("saveLessonBtn").textContent = "Cập nhật bài Dictation →";
+    document.getElementById("reviewCard").style.display = "block";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    window.scrollTo({ top: document.getElementById("createSectionLabel").offsetTop - 20, behavior: "smooth" });
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function cancelEdit() {
+  editingLessonId = null;
+  fetchedVideoId = "";
+  sentences = [];
+  document.getElementById("youtubeUrl").value = "";
+  document.getElementById("lessonTitle").value = "";
+  document.getElementById("createSectionLabel").textContent = "Tạo bài mới";
+  document.getElementById("reviewCardLabel").textContent = "Kiểm tra & chỉnh sửa từng câu trước khi lưu";
+  document.getElementById("saveLessonBtn").textContent = "Lưu bài Dictation →";
+  document.getElementById("reviewCard").style.display = "none";
+  document.getElementById("cancelEditBtn").style.display = "none";
+}
+
+async function deleteLessonPrompt(lessonId, title) {
+  if (!confirm(`Xoá hẳn bài "${title}"? Không thể hoàn tác.`)) return;
+  try {
+    const res = await fetch(API_URL + "/dictation/lessons/" + lessonId, {
+      method: "DELETE",
+      headers: { ...(await authHeaderAsync()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Xoá thất bại");
+    if (editingLessonId === lessonId) cancelEdit();
+    loadManageList();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+initAccess();
+</script>
+</body>
+</html>
