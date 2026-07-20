@@ -28,8 +28,10 @@
   <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
   <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
   <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
-  <a class="side-menu-item" href="history.html" style="--d:5"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
-  <a class="side-menu-item" href="exam-upload.html" style="--d:6;display:none;" id="adminMenuItem"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item" href="dictation.html" style="--d:5"><span class="icon">🎧</span><div><h4>Dictation</h4><p>Nghe chép chính tả theo câu</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:6"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="exam-upload.html" style="--d:7;display:none;"><span class="icon">🛠️</span><div><h4>Tạo đề thi (Admin)</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:8;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
 </aside>
 
 <div class="hero">
@@ -127,7 +129,7 @@
 
       <div class="card" style="background:var(--paper);margin-bottom:14px;">
         <label>Tạo hàng loạt (VD: nhóm câu 1-7 cùng loại, dùng chung nhãn phần)</label>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
           <input type="number" id="bulkFrom" placeholder="Từ câu số" style="max-width:110px;" />
           <input type="number" id="bulkTo" placeholder="Đến câu số" style="max-width:110px;" />
           <select id="bulkType" style="max-width:180px;">
@@ -136,7 +138,22 @@
           </select>
           <input type="text" id="bulkSection" placeholder="Nhãn phần (tuỳ chọn)" style="flex:1;" />
         </div>
+        <select id="bulkPart" style="margin-top:10px;">
+          <option value="">— Không thuộc Part nào —</option>
+        </select>
         <button class="btn btn-primary btn-block" onclick="addBulkQuestions()">Tạo hàng loạt →</button>
+      </div>
+
+      <div class="card" style="background:var(--paper);margin-bottom:14px;">
+        <label>Gán Part cho các câu đã có sẵn (không tạo câu mới, chỉ đổi Part)</label>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <input type="number" id="assignFrom" placeholder="Từ câu số" style="max-width:110px;" />
+          <input type="number" id="assignTo" placeholder="Đến câu số" style="max-width:110px;" />
+          <select id="assignPart" style="flex:1;min-width:160px;">
+            <option value="">— Không thuộc Part nào —</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-block" onclick="assignPartToRange()">Gán Part cho khoảng câu này →</button>
       </div>
 
       <button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="addQuestion()">+ Thêm 1 câu hỏi</button>
@@ -489,6 +506,47 @@ function renderParts() {
       ` : ""}
     </div>
   `).join("");
+
+  const partOptionsHtml = '<option value="">— Không thuộc Part nào —</option>' +
+    parts.map(p => `<option value="${p.temp_id}">${escapeHtml(p.title || "Part " + p.part_number)}</option>`).join("");
+  const bulkPartEl = document.getElementById("bulkPart");
+  const assignPartEl = document.getElementById("assignPart");
+  if (bulkPartEl) bulkPartEl.innerHTML = partOptionsHtml;
+  if (assignPartEl) assignPartEl.innerHTML = partOptionsHtml;
+}
+
+function assignPartToRange() {
+  const from = parseInt(document.getElementById("assignFrom").value, 10);
+  const to = parseInt(document.getElementById("assignTo").value, 10);
+  const partRef = document.getElementById("assignPart").value || null;
+
+  if (!from || !to || to < from) {
+    alert("Nhập đúng khoảng số câu (VD: từ 1 đến 7).");
+    return;
+  }
+
+  let count = 0;
+  questions.forEach(q => {
+    if (q.question_number >= from && q.question_number <= to) {
+      q.part_ref = partRef;
+      count++;
+    }
+  });
+  groups.forEach(g => {
+    // Neu toan bo cau trong nhom nam trong khoang, gan Part cho ca nhom luon
+    const groupQuestions = questions.filter(q => q.group_ref === g.temp_id);
+    if (groupQuestions.length && groupQuestions.every(q => q.question_number >= from && q.question_number <= to)) {
+      g.part_ref = partRef;
+    }
+  });
+
+  renderQuestions();
+  renderGroups();
+  if (!count) {
+    alert("Không tìm thấy câu nào trong khoảng số đó.");
+  } else {
+    alert(`Đã gán Part cho ${count} câu (số ${from}–${to}).`);
+  }
 }
 
 // ---------- Question groups ----------
@@ -567,6 +625,7 @@ function addBulkQuestions() {
   const to = parseInt(document.getElementById("bulkTo").value, 10);
   const type = document.getElementById("bulkType").value;
   const section = document.getElementById("bulkSection").value.trim();
+  const partRef = document.getElementById("bulkPart").value || null;
 
   if (!from || !to || to < from) {
     alert("Nhập đúng khoảng số câu (VD: từ 1 đến 7).");
@@ -588,6 +647,7 @@ function addBulkQuestions() {
       correct_answer: "",
       explanation: "",
       section_label: section,
+      part_ref: partRef,
     });
   }
   questions.sort((a, b) => a.question_number - b.question_number);
