@@ -198,7 +198,7 @@ function renderFolderWords() {
   listEl.innerHTML = currentFolderWords.map(w => `
     <div class="key-vocab-card" style="margin-bottom:12px;">
       <button type="button" class="key-vocab-star starred" style="cursor:pointer;" title="Xoá khỏi thư mục" onclick="deleteWordPrompt('${w.id}')">🗑️</button>
-      <div class="key-vocab-word">${escapeHtml(w.word)} <span class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</span></div>
+      <div class="key-vocab-word">${escapeHtml(w.word)} ${w.part_of_speech ? `<span class="key-vocab-pos">${escapeHtml(w.part_of_speech)}</span>` : ""} <span class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</span></div>
       <div class="key-vocab-meaning-en">${escapeHtml(w.english_meaning || "")}</div>
       <div class="key-vocab-meaning-vi">${escapeHtml(w.vietnamese_meaning || "")}</div>
       ${(w.common_phrases || []).length ? `
@@ -280,6 +280,7 @@ function renderFlashcard() {
   document.getElementById("flashcardProgressText").textContent = `Thẻ ${flashcardIndex + 1}/${flashcardDeck.length}`;
   document.getElementById("flashcardFront").innerHTML = `
     <div class="flashcard-word">${escapeHtml(w.word)}</div>
+    ${w.part_of_speech ? `<div class="key-vocab-pos" style="margin-bottom:6px;">${escapeHtml(w.part_of_speech)}</div>` : ""}
     <div class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</div>
   `;
   document.getElementById("flashcardBack").innerHTML = `
