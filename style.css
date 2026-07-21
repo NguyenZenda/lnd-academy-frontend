@@ -684,6 +684,29 @@ textarea { line-height: 1.7; resize: vertical; }
 .key-vocab-phrase-btn { font-size: 0.74rem; padding: 5px 10px; width: 100%; }
 .key-vocab-phrasebox { margin-top: 8px; padding: 8px 10px; background: var(--surface); border-radius: 6px; border: 1px solid var(--border); }
 .key-vocab-phrase-item { font-size: 0.8rem; color: var(--ink); padding: 3px 0; }
+
+/* ---------- Flashcard study mode ---------- */
+.flashcard-progress-text { text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--green-800); margin-bottom: 16px; }
+.flashcard-wrap { display: flex; justify-content: center; margin-bottom: 12px; perspective: 1200px; }
+.flashcard {
+  width: 100%; max-width: 480px; height: 280px; position: relative; cursor: pointer;
+  transform-style: preserve-3d; transition: transform 0.5s;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+.flashcard-face {
+  position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding: 24px; box-shadow: var(--shadow-hover); border: 1px solid var(--border);
+}
+.flashcard-front { background: var(--surface); }
+.flashcard-back { background: var(--paper); transform: rotateY(180deg); }
+.flashcard-word { font-family: 'Fraunces', serif; font-size: 2rem; color: var(--green-900); font-weight: 600; margin-bottom: 10px; }
+.flashcard-meaning-vi { font-size: 1.3rem; font-weight: 700; color: var(--green-800); margin-bottom: 10px; }
+.flashcard-meaning-en { font-size: 0.95rem; color: var(--ink); margin-bottom: 12px; }
+.flashcard-phrases { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.7; }
+.flashcard-hint { text-align: center; color: var(--ink-soft); font-size: 0.82rem; margin-bottom: 20px; }
+.flashcard-controls { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.flashcard-controls .btn { min-width: 130px; }
 .dictation-split-right { flex: 1 1 auto; min-width: 0; }
 @media (max-width: 860px) {
   .dictation-split { flex-direction: column; }
