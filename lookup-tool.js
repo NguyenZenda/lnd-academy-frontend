@@ -17,15 +17,12 @@
     document.body.appendChild(popoverEl);
 
     toolbarEl.querySelectorAll(".sel-color-btn").forEach(btn => {
-      btn.addEventListener("mousedown", (e) => {
-        e.preventDefault(); // giu selection khong bi mat khi click
-        applyHighlight(btn.dataset.color);
-      });
+      btn.addEventListener("mousedown", (e) => e.preventDefault()); // giu selection khong bi mat
+      btn.addEventListener("click", () => applyHighlight(btn.dataset.color));
     });
-    toolbarEl.querySelector(".sel-lookup-btn").addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      lookupSelection();
-    });
+    const lookupBtn = toolbarEl.querySelector(".sel-lookup-btn");
+    lookupBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    lookupBtn.addEventListener("click", () => lookupSelection());
 
     document.addEventListener("mouseup", handleSelectionChange);
     document.addEventListener("mousedown", (e) => {
@@ -41,10 +38,6 @@
 
   function handleSelectionChange(e) {
     if (toolbarEl.contains(e.target) || popoverEl.contains(e.target)) return;
-    if (!isToolEnabled()) {
-      hideToolbar();
-      return;
-    }
     setTimeout(() => {
       const sel = window.getSelection();
       const text = sel.toString().trim();
@@ -70,6 +63,8 @@
     toolbarEl.style.top = top + "px";
     toolbarEl.style.left = left + "px";
     toolbarEl.classList.add("open");
+    // Highlight luon dung duoc; chi an nut Tra cuu/dich khi dang o che do Kiem tra
+    toolbarEl.querySelector(".sel-lookup-btn").style.display = isToolEnabled() ? "inline-flex" : "none";
     hidePopover();
   }
 
