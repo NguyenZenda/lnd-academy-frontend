@@ -79,17 +79,21 @@
     </div>
   </div>
 
-  <div class="card" id="completeCard" style="display:none;text-align:center;">
-    <div style="font-size:2.5rem;margin-bottom:10px;">🎉</div>
-    <h3 style="font-family:'Fraunces',serif;color:var(--green-900);margin-bottom:8px;">Hoàn thành bài Dictation!</h3>
-    <p id="finalScoreText" style="color:var(--ink-soft);margin-bottom:20px;"></p>
-    <a class="btn btn-primary" href="dictation.html">← Quay lại danh sách</a>
+  <div class="card" id="completeCard" style="display:none;">
+    <div style="text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:10px;">🎉</div>
+      <h3 style="font-family:'Fraunces',serif;color:var(--green-900);margin-bottom:8px;">Hoàn thành bài Dictation!</h3>
+      <p id="finalScoreText" style="color:var(--ink-soft);margin-bottom:20px;"></p>
+      <a class="btn btn-primary" href="dictation.html">← Quay lại danh sách</a>
+    </div>
+    <div id="dictationKeyVocabContainer" style="display:none;text-align:left;"></div>
   </div>
 </main>
 
 <script src="auth.js"></script>
 <script src="chat-widget.js"></script>
 <script src="lookup-tool.js"></script>
+<script src="key-vocab.js"></script>
 <script>
 const params = new URLSearchParams(location.search);
 const lessonId = params.get("id");
@@ -276,6 +280,11 @@ async function finishLesson() {
   document.getElementById("completeCard").style.display = "block";
   document.getElementById("finalScoreText").textContent =
     `Bạn làm đúng ${correctCount}/${sentences.length} câu.`;
+
+  if (window.renderKeyVocab) {
+    const fullText = sentences.map(s => s.text).join(" ");
+    renderKeyVocab("dictationKeyVocabContainer", "dictation", lessonId, fullText);
+  }
 
   try {
     await fetch(API_URL + "/dictation/lessons/" + lessonId + "/submit", {
