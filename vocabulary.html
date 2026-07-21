@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Từ vựng của tôi – LND Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <button class="hamburger-btn" id="menuToggle" aria-label="Mở menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="logo logo-link" href="index.html"><img src="assets/logo.png" alt="LND Academy" class="logo-img"/>LND <span class="brand-sub">Academy</span></a>
+  </div>
+  <div class="nav-auth" id="navAuth"></div>
+</nav>
+
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<aside class="side-menu" id="sideMenu">
+  <button class="side-menu-close" onclick="closeMenu()">✕</button>
+  <a href="index.html" class="side-menu-title" onclick="closeMenu()">🏠 Khám phá LND Academy</a>
+  <a class="side-menu-item" href="grade.html" style="--d:0"><span class="icon">✍️</span><div><h4>Chấm bài Writing</h4><p>Chấm điểm IELTS Writing bằng AI</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=ielts" style="--d:1"><span class="icon">📘</span><div><h4>Tài liệu IELTS</h4><p>Đề mẫu và tài liệu ôn luyện</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=hsca" style="--d:2"><span class="icon">🏫</span><div><h4>Tài liệu HSCA</h4><p>Học liệu chương trình HSCA</p></div></a>
+  <a class="side-menu-item" href="documents.html?category=thpt" style="--d:3"><span class="icon">🎓</span><div><h4>Ôn thi THPT</h4><p>Đề thi thử và tài liệu ôn tập</p></div></a>
+  <a class="side-menu-item" href="practice-tests.html" style="--d:4"><span class="icon">🧩</span><div><h4>Luyện đề Reading/Listening</h4><p>Làm đề trắc nghiệm & trả lời ngắn</p></div></a>
+  <a class="side-menu-item" href="dictation.html" style="--d:5"><span class="icon">🎧</span><div><h4>Dictation</h4><p>Nghe chép chính tả theo câu</p></div></a>
+  <a class="side-menu-item" href="vocabulary.html" style="--d:6"><span class="icon">📚</span><div><h4>Từ vựng của tôi</h4><p>Thư mục từ vựng đã lưu & Flashcard</p></div></a>
+  <a class="side-menu-item" href="history.html" style="--d:7"><span class="icon">📊</span><div><h4>Lịch sử làm bài</h4><p>Xem lại kết quả các lần luyện đề</p></div></a>
+  <a class="side-menu-item teacher-or-admin-menu" href="exam-upload.html" style="--d:8;display:none;"><span class="icon">🛠️</span><div><h4>Tạo đề thi</h4><p>Nhập đề thi &amp; đáp án thủ công</p></div></a>
+  <a class="side-menu-item admin-only-menu" href="dictation-upload.html" style="--d:9;display:none;"><span class="icon">🎬</span><div><h4>Tạo Dictation (Admin)</h4><p>Dán link YouTube, tự tách câu</p></div></a>
+</aside>
+
+<div class="hero">
+  <div class="hero-tag">Từ vựng</div>
+  <h1>Từ vựng của tôi</h1>
+  <p>Các từ bạn đã lưu (bấm ☆ khi đọc/nghe bài) — sắp xếp theo thư mục, học lại bằng Flashcard.</p>
+</div>
+
+<main>
+  <div id="notLoggedIn" class="card" style="display:none;text-align:center;">
+    <p style="color:var(--ink-soft);">Đăng nhập để xem và quản lý từ vựng đã lưu của bạn.</p>
+    <div style="margin-top:16px;"><a class="btn btn-primary" href="login.html">Đăng nhập</a></div>
+  </div>
+
+  <!-- FOLDER LIST VIEW -->
+  <div id="folderListView">
+    <div class="card">
+      <div class="card-label">Thư mục của tôi</div>
+      <div style="display:flex;gap:10px;margin-bottom:18px;">
+        <input type="text" id="newFolderName" placeholder="Tên thư mục mới..." style="flex:1;margin-bottom:0;" />
+        <button class="btn btn-primary" onclick="createFolder()" style="white-space:nowrap;">+ Tạo thư mục</button>
+      </div>
+      <button class="btn btn-ghost btn-block" id="flashcardAllBtn" style="margin-bottom:18px;" onclick="startFlashcardAll()">🎴 Học Flashcard — Tất cả thư mục</button>
+      <div class="doc-list" id="folderList"><div class="empty-state">Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- FOLDER DETAIL VIEW -->
+  <div id="folderDetailView" style="display:none;">
+    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToFolderList()">← Quay lại danh sách thư mục</button>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div class="card-label" id="folderDetailTitle" style="margin:0;">Thư mục</div>
+        <button class="btn btn-primary" onclick="startFlashcardFolder()">🎴 Học Flashcard</button>
+      </div>
+      <div id="folderWordsList"></div>
+    </div>
+  </div>
+
+  <!-- FLASHCARD VIEW -->
+  <div id="flashcardView" style="display:none;">
+    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="exitFlashcard()">← Thoát Flashcard</button>
+    <div class="flashcard-progress-text" id="flashcardProgressText">Thẻ 1/1</div>
+    <div class="flashcard-wrap">
+      <div class="flashcard" id="flashcardEl" onclick="flipFlashcard()">
+        <div class="flashcard-face flashcard-front" id="flashcardFront"></div>
+        <div class="flashcard-face flashcard-back" id="flashcardBack"></div>
+      </div>
+    </div>
+    <p class="flashcard-hint">Bấm vào thẻ để lật xem nghĩa</p>
+    <div class="flashcard-controls">
+      <button class="btn btn-ghost" onclick="prevFlashcard()">◀ Từ trước</button>
+      <button class="btn btn-ghost" onclick="replayFlashcard()">🔁 Học lại</button>
+      <button class="btn btn-ghost" onclick="nextFlashcard()">Từ sau ▶</button>
+    </div>
+  </div>
+</main>
+
+<script src="auth.js"></script>
+<script src="chat-widget.js"></script>
+<script>
+let folders = [];
+let currentFolderId = null;
+let currentFolderWords = [];
+let flashcardDeck = [];
+let flashcardIndex = 0;
+let flashcardFlipped = false;
+
+function initAccess() {
+  const user = getUser();
+  document.getElementById("notLoggedIn").style.display = user ? "none" : "block";
+  document.getElementById("folderListView").style.display = user ? "block" : "none";
+  if (user) loadFolders();
+}
+
+async function loadFolders() {
+  const listEl = document.getElementById("folderList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải...</div>';
+  try {
+    const res = await fetch(API_URL + "/vocab/folders", { headers: { ...(await authHeaderAsync()) } });
+    folders = await res.json();
+    if (!res.ok) throw new Error("Không tải được danh sách thư mục");
+
+    if (!folders.length) {
+      listEl.innerHTML = '<div class="empty-state">Chưa có thư mục nào — tạo mới ở trên, hoặc bấm ☆ khi đọc bài để lưu từ.</div>';
+      return;
+    }
+
+    listEl.innerHTML = folders.map(f => `
+      <div class="doc-item">
+        <div class="doc-info">
+          <h4>${escapeHtml(f.name)}</h4>
+        </div>
+        <div class="doc-actions">
+          <button class="btn btn-ghost" onclick="openFolder('${f.id}', '${escapeHtml(f.name).replace(/'/g, "\\\\'")}')">Xem</button>
+          <button class="btn btn-danger" onclick="deleteFolderPrompt('${f.id}', '${escapeHtml(f.name).replace(/'/g, "\\\\'")}')">Xoá</button>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+async function createFolder() {
+  const input = document.getElementById("newFolderName");
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    const res = await fetch(API_URL + "/vocab/folders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeaderAsync()) },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Tạo thư mục thất bại");
+    input.value = "";
+    loadFolders();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function deleteFolderPrompt(folderId, name) {
+  if (!confirm(`Xoá thư mục "${name}" và toàn bộ từ vựng trong đó?`)) return;
+  try {
+    const res = await fetch(API_URL + "/vocab/folders/" + folderId, {
+      method: "DELETE",
+      headers: { ...(await authHeaderAsync()) },
+    });
+    if (!res.ok) throw new Error("Xoá thất bại");
+    loadFolders();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function openFolder(folderId, name) {
+  currentFolderId = folderId;
+  document.getElementById("folderDetailTitle").textContent = name;
+  document.getElementById("folderListView").style.display = "none";
+  document.getElementById("folderDetailView").style.display = "block";
+  window.scrollTo(0, 0);
+
+  const listEl = document.getElementById("folderWordsList");
+  listEl.innerHTML = '<div class="empty-state">Đang tải...</div>';
+  try {
+    const res = await fetch(API_URL + "/vocab/folders/" + folderId + "/words", { headers: { ...(await authHeaderAsync()) } });
+    currentFolderWords = await res.json();
+    if (!res.ok) throw new Error("Không tải được từ vựng");
+    renderFolderWords();
+  } catch (e) {
+    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function renderFolderWords() {
+  const listEl = document.getElementById("folderWordsList");
+  if (!currentFolderWords.length) {
+    listEl.innerHTML = '<div class="empty-state">Thư mục này chưa có từ nào.</div>';
+    return;
+  }
+  listEl.innerHTML = currentFolderWords.map(w => `
+    <div class="key-vocab-card" style="margin-bottom:12px;">
+      <button type="button" class="key-vocab-star starred" style="cursor:pointer;" title="Xoá khỏi thư mục" onclick="deleteWordPrompt('${w.id}')">🗑️</button>
+      <div class="key-vocab-word">${escapeHtml(w.word)} <span class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</span></div>
+      <div class="key-vocab-meaning-en">${escapeHtml(w.english_meaning || "")}</div>
+      <div class="key-vocab-meaning-vi">${escapeHtml(w.vietnamese_meaning || "")}</div>
+      ${(w.common_phrases || []).length ? `
+        <div class="key-vocab-phrasebox" style="margin-top:8px;">
+          ${(w.common_phrases || []).map(p => `<div class="key-vocab-phrase-item">${escapeHtml(p)}</div>`).join("")}
+        </div>
+      ` : ""}
+    </div>
+  `).join("");
+}
+
+async function deleteWordPrompt(wordId) {
+  if (!confirm("Xoá từ này khỏi thư mục?")) return;
+  try {
+    await fetch(API_URL + "/vocab/words/" + wordId, {
+      method: "DELETE",
+      headers: { ...(await authHeaderAsync()) },
+    });
+    currentFolderWords = currentFolderWords.filter(w => w.id !== wordId);
+    renderFolderWords();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function backToFolderList() {
+  document.getElementById("folderDetailView").style.display = "none";
+  document.getElementById("folderListView").style.display = "block";
+  loadFolders();
+}
+
+// ---------------- Flashcard mode ----------------
+function startFlashcardFolder() {
+  if (!currentFolderWords.length) {
+    alert("Thư mục này chưa có từ nào để học.");
+    return;
+  }
+  flashcardDeck = currentFolderWords;
+  enterFlashcardMode();
+}
+
+async function startFlashcardAll() {
+  try {
+    const res = await fetch(API_URL + "/vocab/words", { headers: { ...(await authHeaderAsync()) } });
+    const words = await res.json();
+    if (!res.ok) throw new Error("Không tải được từ vựng");
+    if (!words.length) {
+      alert("Bạn chưa lưu từ nào cả — bấm ☆ khi đọc/nghe bài để lưu từ trước đã.");
+      return;
+    }
+    flashcardDeck = words;
+    enterFlashcardMode();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function enterFlashcardMode() {
+  flashcardIndex = 0;
+  flashcardFlipped = false;
+  document.getElementById("folderListView").style.display = "none";
+  document.getElementById("folderDetailView").style.display = "none";
+  document.getElementById("flashcardView").style.display = "block";
+  window.scrollTo(0, 0);
+  renderFlashcard();
+}
+
+function exitFlashcard() {
+  document.getElementById("flashcardView").style.display = "none";
+  if (currentFolderId) {
+    document.getElementById("folderDetailView").style.display = "block";
+  } else {
+    document.getElementById("folderListView").style.display = "block";
+  }
+}
+
+function renderFlashcard() {
+  const w = flashcardDeck[flashcardIndex];
+  document.getElementById("flashcardProgressText").textContent = `Thẻ ${flashcardIndex + 1}/${flashcardDeck.length}`;
+  document.getElementById("flashcardFront").innerHTML = `
+    <div class="flashcard-word">${escapeHtml(w.word)}</div>
+    <div class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</div>
+  `;
+  document.getElementById("flashcardBack").innerHTML = `
+    <div class="flashcard-meaning-vi">${escapeHtml(w.vietnamese_meaning || "")}</div>
+    <div class="flashcard-meaning-en">${escapeHtml(w.english_meaning || "")}</div>
+    ${(w.common_phrases || []).length ? `
+      <div class="flashcard-phrases">${(w.common_phrases || []).map(p => `<div>${escapeHtml(p)}</div>`).join("")}</div>
+    ` : ""}
+  `;
+  flashcardFlipped = false;
+  document.getElementById("flashcardEl").classList.remove("flipped");
+}
+
+function flipFlashcard() {
+  flashcardFlipped = !flashcardFlipped;
+  document.getElementById("flashcardEl").classList.toggle("flipped", flashcardFlipped);
+}
+
+function prevFlashcard() {
+  if (flashcardIndex > 0) flashcardIndex--;
+  renderFlashcard();
+}
+
+function nextFlashcard() {
+  if (flashcardIndex < flashcardDeck.length - 1) flashcardIndex++;
+  else alert("Bạn đã học hết bộ thẻ này rồi! 🎉");
+  renderFlashcard();
+}
+
+function replayFlashcard() {
+  renderFlashcard();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+initAccess();
+</script>
+</body>
+</html>
