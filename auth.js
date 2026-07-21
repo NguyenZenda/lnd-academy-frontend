@@ -77,6 +77,11 @@ function renderNavAuth() {
     el.style.display = (user && user.role === "admin") ? "flex" : "none";
   });
 
+  const teacherOrAdminMenuItems = document.querySelectorAll(".teacher-or-admin-menu");
+  teacherOrAdminMenuItems.forEach(el => {
+    el.style.display = (user && (user.role === "admin" || user.role === "teacher")) ? "flex" : "none";
+  });
+
   if (!el) return;
   if (user) {
     const roleLabel = user.role === "teacher" ? "Giáo viên" : (user.role === "admin" ? "Admin" : "Học sinh");
