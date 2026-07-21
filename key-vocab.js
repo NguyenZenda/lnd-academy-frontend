@@ -141,6 +141,7 @@
         if (starBtn) {
           starBtn.addEventListener("click", () => openFolderPicker({
             word: w.word,
+            part_of_speech: w.part_of_speech || "",
             cefr_level: w.cefr_level || "",
             english_meaning: w.english_meaning || "",
             vietnamese_meaning: w.vietnamese_meaning || "",
@@ -165,7 +166,7 @@
     return `
       <div class="key-vocab-card">
         <button type="button" class="key-vocab-star" id="star_${cardId}" title="Lưu vào Từ vựng của tôi">☆</button>
-        <div class="key-vocab-word">${escapeHtml(w.word)} <span class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</span></div>
+        <div class="key-vocab-word">${escapeHtml(w.word)} ${w.part_of_speech ? `<span class="key-vocab-pos">${escapeHtml(w.part_of_speech)}</span>` : ""} <span class="key-vocab-level">${escapeHtml(w.cefr_level || "")}</span></div>
         <div class="key-vocab-meaning-en">${escapeHtml(w.english_meaning || "")}</div>
         <div class="key-vocab-meaning-vi">${escapeHtml(w.vietnamese_meaning || "")}</div>
         ${phrases.length ? `
