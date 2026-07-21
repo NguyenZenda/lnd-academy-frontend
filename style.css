@@ -660,6 +660,30 @@ textarea { line-height: 1.7; resize: vertical; }
 .lookup-tag { padding: 3px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 600; }
 .lookup-tag.syn { background: rgba(90,138,34,0.12); color: var(--green-800); }
 .lookup-tag.ant { background: rgba(178,64,46,0.10); color: var(--danger); }
+
+/* ---------- Key Vocab section (B1+ auto-extracted) ---------- */
+.key-vocab-title { font-family: 'Fraunces', serif; color: var(--green-900); font-size: 1.05rem; margin: 24px 0 14px; padding-top: 18px; border-top: 1px dashed var(--border); }
+.key-vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.key-vocab-card {
+  position: relative; background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 16px; padding-top: 30px;
+}
+.key-vocab-star {
+  position: absolute; top: 8px; right: 10px; background: none; border: none; font-size: 1.2rem;
+  cursor: pointer; color: var(--ink-soft); transition: all 0.15s;
+}
+.key-vocab-star:hover { color: #d9a441; transform: scale(1.15); }
+.key-vocab-star.starred { color: #d9a441; }
+.key-vocab-word { font-weight: 700; color: var(--green-900); font-size: 1rem; margin-bottom: 6px; }
+.key-vocab-level {
+  font-size: 0.65rem; font-weight: 700; background: var(--green-600); color: #fff;
+  padding: 1px 7px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
+}
+.key-vocab-meaning-en { font-size: 0.82rem; color: var(--ink); line-height: 1.5; margin-bottom: 4px; }
+.key-vocab-meaning-vi { font-size: 0.85rem; color: var(--green-800); font-weight: 600; margin-bottom: 8px; }
+.key-vocab-phrase-btn { font-size: 0.74rem; padding: 5px 10px; width: 100%; }
+.key-vocab-phrasebox { margin-top: 8px; padding: 8px 10px; background: var(--surface); border-radius: 6px; border: 1px solid var(--border); }
+.key-vocab-phrase-item { font-size: 0.8rem; color: var(--ink); padding: 3px 0; }
 .dictation-split-right { flex: 1 1 auto; min-width: 0; }
 @media (max-width: 860px) {
   .dictation-split { flex-direction: column; }
