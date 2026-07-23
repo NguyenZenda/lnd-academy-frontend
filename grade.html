@@ -38,7 +38,7 @@
 <div class="hero">
   <div class="hero-tag">IELTS Writing Assessment</div>
   <h1>Chấm bài luận của bạn trong vài giây</h1>
-  <p>Chấm điểm bằng AI dựa trên Band Descriptors chính thức của IELTS. Dán đề bài, tải ảnh biểu đồ (nếu có), và nhận nhận xét chi tiết theo 4 tiêu chí ngay lập tức.</p>
+  <p>Với mô hình trí tuệ nhân tạo đã được huấn luyện chuyên sâu qua hơn 10,000 bài</p>
 </div>
 
 <main>
@@ -90,8 +90,10 @@
     </div>
     <div class="criteria-grid" id="criteriaGrid"></div>
     <div class="overall-feedback-card">
-      <div class="card-label" style="margin-bottom:12px">Nhận xét tổng quan từ giám khảo</div>
+      <div class="card-label" style="margin-bottom:12px">Nhận xét tổng quan từ giám khảo (tiếng Anh)</div>
       <p id="overallFeedback"></p>
+      <div class="card-label" style="margin:16px 0 12px" id="overallFeedbackViLabel">Bản dịch tiếng Việt</div>
+      <p id="overallFeedbackVi" style="color:var(--ink-soft);"></p>
     </div>
     <button class="btn btn-ghost btn-block" onclick="reset()">← Chấm bài khác</button>
   </div>
@@ -192,6 +194,17 @@ function showResults(data) {
   document.getElementById("overallBand").textContent = data.overall_band;
   document.getElementById("bandDesc").textContent = getBandDesc(data.overall_band);
   document.getElementById("overallFeedback").textContent = data.overall_feedback;
+
+  const viBlock = document.getElementById("overallFeedbackVi");
+  const viLabel = document.getElementById("overallFeedbackViLabel");
+  if (data.overall_feedback_vi) {
+    viBlock.textContent = data.overall_feedback_vi;
+    viBlock.style.display = "block";
+    viLabel.style.display = "block";
+  } else {
+    viBlock.style.display = "none";
+    viLabel.style.display = "none";
+  }
 
   const criteria = [
     { name: data.criterion1_name, score: data.criterion1_score, feedback: data.criterion1_feedback },
