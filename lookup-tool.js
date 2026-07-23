@@ -59,7 +59,10 @@
   function showToolbar(range) {
     const rect = range.getBoundingClientRect();
     const top = rect.top + window.scrollY - 50;
-    const left = rect.left + window.scrollX + rect.width / 2;
+    let left = rect.left + window.scrollX + rect.width / 2;
+    // Gioi han trong pham vi man hinh, tranh tran ra ngoai tren dien thoai man hinh hep
+    const margin = 90; // ~1 nua chieu rong toolbar, du de transform(-50%) khong lam tran mep
+    left = Math.max(margin, Math.min(left, window.scrollX + window.innerWidth - margin));
     toolbarEl.style.top = top + "px";
     toolbarEl.style.left = left + "px";
     toolbarEl.classList.add("open");
@@ -98,8 +101,11 @@
     if (!text) return;
 
     const rect = savedRange.getBoundingClientRect();
+    const popoverWidth = 300; // khop voi width co dinh trong CSS (.lookup-popover)
+    let popLeft = rect.left + window.scrollX;
+    popLeft = Math.max(8, Math.min(popLeft, window.scrollX + window.innerWidth - popoverWidth - 8));
     popoverEl.style.top = (rect.bottom + window.scrollY + 8) + "px";
-    popoverEl.style.left = (rect.left + window.scrollX) + "px";
+    popoverEl.style.left = popLeft + "px";
     popoverEl.innerHTML = `<div class="lookup-loading">Đang tra cứu...</div>`;
     popoverEl.classList.add("open");
     hideToolbar();
