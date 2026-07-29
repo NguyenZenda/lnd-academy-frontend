@@ -134,6 +134,7 @@
     </div>
 
     <div class="exam-navbar" id="examNavbar">
+      <button type="button" class="nav-collapse-btn" id="navCollapseBtn" onclick="toggleNavPills()" title="Ẩn/hiện danh sách câu hỏi">▾</button>
       <div class="exam-navbar-pills" id="examNavPills"></div>
       <button class="exam-submit-btn" id="submitBtn" onclick="submitExam()" title="Nộp bài">✓</button>
     </div>
@@ -495,9 +496,17 @@ function renderPassageAndQuestions(rawPassage, groupsSource, questionsSource) {
     kvContainer.innerHTML = "";
   }
 
-  const groupsHtml = groupsSource.map(g => renderGroupBlock(g, numToQ, embeddedNums)).join("");
+  const groupsHtml = groupsSource.map(g => {
+    const blockHtml = renderGroupBlock(g, numToQ, embeddedNums);
+    // Cau hoi thuoc nhom nay nhung KHONG duoc nhung qua [[N]] trong huong dan
+    // -> phai hien ngay duoi khoi huong dan cua DUNG nhom do, khong doi den cuoi
+    const memberQuestions = questionsSource.filter(q => q.group_id === g.id && !embeddedNums.has(q.question_number));
+    const memberGroups = groupStandaloneQuestions(memberQuestions);
+    return blockHtml + memberGroups.map(renderGroup).join("");
+  }).join("");
 
-  const standalone = questionsSource.filter(q => !embeddedNums.has(q.question_number));
+  // Chi nhung cau THAT SU khong thuoc nhom nao (khong co group_id) moi roi vao day
+  const standalone = questionsSource.filter(q => !q.group_id && !embeddedNums.has(q.question_number));
   const stGroups = groupStandaloneQuestions(standalone);
   document.getElementById("questionsArea").innerHTML = groupsHtml + stGroups.map(renderGroup).join("");
 }
@@ -616,6 +625,14 @@ function renderGroup(g) {
       `}
     </div>
   `;
+}
+
+function toggleNavPills() {
+  const wrap = document.getElementById("examNavPills");
+  const btn = document.getElementById("navCollapseBtn");
+  const collapsed = wrap.classList.toggle("collapsed");
+  btn.textContent = collapsed ? "▸" : "▾";
+  btn.title = collapsed ? "Hiện danh sách câu hỏi" : "Ẩn danh sách câu hỏi";
 }
 
 function renderNavPills() {
