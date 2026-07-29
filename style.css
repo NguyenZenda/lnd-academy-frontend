@@ -431,9 +431,10 @@ textarea { line-height: 1.7; resize: vertical; }
 .chat-bubble {
   position: fixed; bottom: 24px; right: 24px; width: 58px; height: 58px; border-radius: 50%;
   background: linear-gradient(135deg, var(--green-600), var(--green-500)); border: none; color: #fff;
-  font-size: 1.5rem; cursor: pointer; box-shadow: 0 8px 24px rgba(46,74,20,0.35); z-index: 60;
-  display: flex; align-items: center; justify-content: center; transition: transform 0.2s;
+  font-size: 1.5rem; cursor: grab; box-shadow: 0 8px 24px rgba(46,74,20,0.35); z-index: 60;
+  display: flex; align-items: center; justify-content: center; transition: transform 0.2s; touch-action: none;
 }
+.chat-bubble:active { cursor: grabbing; }
 .chat-bubble:hover { transform: scale(1.06); }
 
 .chat-panel {
@@ -519,8 +520,9 @@ textarea { line-height: 1.7; resize: vertical; }
   display: none; justify-content: space-between; align-items: center; gap: 12px;
   position: sticky; bottom: 0; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 20px;
-  box-shadow: 0 -6px 20px rgba(46,74,20,0.08);
+  box-shadow: 0 -6px 20px rgba(46,74,20,0.08); transition: padding 0.2s, margin 0.2s;
 }
+.exam-navbar.pills-collapsed { padding: 6px 10px; margin-top: 10px; }
 .exam-navbar-pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; max-height: 120px; overflow-y: auto; transition: all 0.2s; }
 .exam-navbar-pills.collapsed { max-height: 0; overflow: hidden; flex-wrap: nowrap; gap: 0; }
 .nav-collapse-btn {
