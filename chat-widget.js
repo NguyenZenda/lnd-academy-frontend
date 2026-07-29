@@ -1,3 +1,5 @@
+let bubbleWasDragged = false;
+
 (function () {
   const CHAT_API_URL = "https://lnd-academy-backend.onrender.com";
   let history = [];
@@ -27,6 +29,7 @@
     document.body.appendChild(wrap);
 
     document.getElementById("chatBubble").addEventListener("click", () => {
+      if (bubbleWasDragged) { bubbleWasDragged = false; return; }
       document.getElementById("chatPanel").classList.toggle("open");
       document.getElementById("chatInput").focus();
     });
@@ -34,6 +37,78 @@
       document.getElementById("chatPanel").classList.remove("open");
     });
     document.getElementById("chatForm").addEventListener("submit", sendMessage);
+
+    makeBubbleDraggable();
+  }
+
+  function makeBubbleDraggable() {
+    const bubble = document.getElementById("chatBubble");
+    let dragging = false;
+    let moved = false;
+    let startX, startY, startLeft, startTop;
+
+    // Khoi phuc vi tri da luu tu lan truoc (neu co)
+    const saved = localStorage.getItem("lnd_chat_bubble_pos");
+    if (saved) {
+      try {
+        const { left, top } = JSON.parse(saved);
+        applyPosition(left, top);
+      } catch (e) { /* bo qua neu du lieu luu hong */ }
+    }
+
+    function applyPosition(left, top) {
+      const maxLeft = window.innerWidth - bubble.offsetWidth - 8;
+      const maxTop = window.innerHeight - bubble.offsetHeight - 8;
+      left = Math.max(8, Math.min(left, maxLeft));
+      top = Math.max(8, Math.min(top, maxTop));
+      bubble.style.left = left + "px";
+      bubble.style.top = top + "px";
+      bubble.style.right = "auto";
+      bubble.style.bottom = "auto";
+    }
+
+    function onPointerDown(e) {
+      dragging = true;
+      moved = false;
+      const point = e.touches ? e.touches[0] : e;
+      const rect = bubble.getBoundingClientRect();
+      startX = point.clientX;
+      startY = point.clientY;
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.addEventListener("mousemove", onPointerMove);
+      document.addEventListener("mouseup", onPointerUp);
+      document.addEventListener("touchmove", onPointerMove, { passive: false });
+      document.addEventListener("touchend", onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!dragging) return;
+      const point = e.touches ? e.touches[0] : e;
+      const dx = point.clientX - startX;
+      const dy = point.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        moved = true;
+        e.preventDefault();
+      }
+      applyPosition(startLeft + dx, startTop + dy);
+    }
+
+    function onPointerUp() {
+      dragging = false;
+      document.removeEventListener("mousemove", onPointerMove);
+      document.removeEventListener("mouseup", onPointerUp);
+      document.removeEventListener("touchmove", onPointerMove);
+      document.removeEventListener("touchend", onPointerUp);
+      if (moved) {
+        bubbleWasDragged = true;
+        const rect = bubble.getBoundingClientRect();
+        localStorage.setItem("lnd_chat_bubble_pos", JSON.stringify({ left: rect.left, top: rect.top }));
+      }
+    }
+
+    bubble.addEventListener("mousedown", onPointerDown);
+    bubble.addEventListener("touchstart", onPointerDown, { passive: true });
   }
 
   function addMessage(role, text) {
