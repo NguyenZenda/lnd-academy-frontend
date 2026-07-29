@@ -628,9 +628,11 @@ function renderGroup(g) {
 }
 
 function toggleNavPills() {
+  const navbar = document.getElementById("examNavbar");
   const wrap = document.getElementById("examNavPills");
   const btn = document.getElementById("navCollapseBtn");
-  const collapsed = wrap.classList.toggle("collapsed");
+  const collapsed = navbar.classList.toggle("pills-collapsed");
+  wrap.classList.toggle("collapsed", collapsed);
   btn.textContent = collapsed ? "▸" : "▾";
   btn.title = collapsed ? "Hiện danh sách câu hỏi" : "Ẩn danh sách câu hỏi";
 }
