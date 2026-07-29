@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Luyện đề Reading/Listening – LND Academy</title>
+<title>Reading/Listening Practice – LND Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="style.css" />
 </head>
@@ -36,9 +36,9 @@
 </aside>
 
 <div class="hero" id="pageHero">
-  <div class="hero-tag">Luyện đề</div>
-  <h1 id="pageTitle">Luyện đề Reading &amp; Listening</h1>
-  <p id="pageDesc">Chọn 1 đề để làm thử — có cả câu trắc nghiệm và câu trả lời ngắn, chấm điểm ngay khi nộp bài.</p>
+  <div class="hero-tag">Practice Tests</div>
+  <h1 id="pageTitle">Reading &amp; Listening Practice</h1>
+  <p id="pageDesc">Choose a test to try — multiple choice and short answer questions, graded instantly on submission.</p>
 </div>
 
 <main id="mainEl">
@@ -50,25 +50,25 @@
         <button type="button" class="task-btn" id="skillListeningBtn" onclick="setSkillFilter('listening')">🎧 Listening</button>
       </div>
       <div class="doc-list" id="examList">
-        <div class="empty-state">Đang tải danh sách đề thi...</div>
+        <div class="empty-state">Loading test list...</div>
       </div>
     </div>
   </div>
 
   <!-- TAKE-EXAM VIEW -->
   <div id="takeView" style="display:none;">
-    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToList()">← Quay lại danh sách</button>
+    <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="backToList()">← Back to list</button>
 
     <div id="examTopbarWrap">
       <div class="exam-topbar">
         <div>
-          <div class="exam-title" id="examTitleText">Đề thi</div>
+          <div class="exam-title" id="examTitleText">Exam</div>
           <div class="exam-subtitle" id="examSubtitleText"></div>
         </div>
         <div style="display:flex;align-items:center;gap:14px;">
           <div class="exam-timer" id="examTimer" style="display:none;">⏱ <span id="examTimerText">--:--</span></div>
           <div id="audioControl" style="display:none;">
-            <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()">▶ Nghe (1 lần)</button>
+            <button class="btn btn-primary" id="playAudioBtn" onclick="playAudioOnce()">▶ Listen (once)</button>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@
       <div class="part-tabs" id="partTabs" style="display:none;"></div>
 
       <div class="exam-part-header">
-        <strong id="questionsRangeLabel">Câu hỏi</strong>
+        
         <span id="passageLabel" style="color:var(--ink-soft);font-size:0.85rem;"></span>
       </div>
     </div>
@@ -90,7 +90,7 @@
           <div id="keyVocabContainer" style="display:none;"></div>
         </div>
       </div>
-      <div class="split-divider" id="splitDivider" title="Kéo để đổi tỉ lệ"></div>
+      <div class="split-divider" id="splitDivider" title="Drag to resize"></div>
       <div class="split-pane split-right" id="splitRight">
         <div id="questionsArea"></div>
       </div>
@@ -98,45 +98,45 @@
 
     <div class="error-msg" id="submitError"></div>
 
-    <!-- TRANG BÁO CÁO KẾT QUẢ (thay thế toàn bộ giao diện làm bài sau khi nộp) -->
+    <!-- RESULTS REPORT PAGE (replaces the exam-taking UI after submission) -->
     <div id="resultView" style="display:none;">
       <div class="report-header">
         <div class="report-score-block">
-          <div class="band-label">Số câu đúng</div>
+          <div class="band-label">Correct Answers</div>
           <div class="band-score" id="scoreText" style="font-size:3.2rem;">0/0</div>
         </div>
         <div class="report-band-block" id="reportBandBlock">
           <div class="band-label">Band Score</div>
           <div class="band-score-big" id="bandScoreText">0.0</div>
-          <div class="band-score-note">Quy đổi theo thang điểm IELTS chính thức (40 câu)</div>
+          <div class="band-score-note">Converted using the official IELTS band scale (40 questions)</div>
         </div>
       </div>
 
       <div id="sectionBreakdown"></div>
 
       <div class="card">
-        <div class="card-label">Tổng quan bài làm — bấm vào câu để xem chi tiết</div>
+        <div class="card-label">Overview — click a question to see details</div>
         <div class="result-grid" id="resultGrid"></div>
       </div>
 
       <div class="card">
-        <div class="card-label">Xem lại các câu làm sai</div>
+        <div class="card-label">Review incorrect answers</div>
         <div id="resultMistakes"></div>
       </div>
 
       <div class="card" id="resultTranscriptCard" style="display:none;">
-        <div class="card-label" style="cursor:pointer;" onclick="toggleTranscript()">📄 Xem lại Transcript (bấm để mở/đóng)</div>
+        <div class="card-label" style="cursor:pointer;" onclick="toggleTranscript()">📄 View Transcript (click to open/close)</div>
         <div id="resultTranscriptBody" style="display:none;white-space:pre-line;line-height:1.8;color:var(--ink);"></div>
         <div id="resultKeyVocabContainer" style="display:none;"></div>
       </div>
 
-      <button class="btn btn-ghost btn-block" onclick="backToList()">← Quay lại danh sách đề</button>
+      <button class="btn btn-ghost btn-block" onclick="backToList()">← Back to test list</button>
     </div>
 
     <div class="exam-navbar" id="examNavbar">
-      <button type="button" class="nav-collapse-btn" id="navCollapseBtn" onclick="toggleNavPills()" title="Ẩn/hiện danh sách câu hỏi">▾</button>
+      <button type="button" class="nav-collapse-btn" id="navCollapseBtn" onclick="toggleNavPills()" title="Show/hide question list">▾</button>
       <div class="exam-navbar-pills" id="examNavPills"></div>
-      <button class="exam-submit-btn" id="submitBtn" onclick="submitExam()" title="Nộp bài">✓</button>
+      <button class="exam-submit-btn" id="submitBtn" onclick="submitExam()" title="Submit">✓</button>
     </div>
   </div>
 </main>
@@ -144,48 +144,48 @@
 <div class="modal-overlay" id="modeModal">
   <div class="modal">
     <div class="modal-header">
-      <h3>Chọn chế độ làm bài</h3>
+      <h3>Choose your mode</h3>
       <button class="modal-close" onclick="closeModeModal()">✕</button>
     </div>
     <div class="time-option-list">
       <label class="time-option">
         <input type="radio" name="modeChoice" value="test" checked />
-        <div><strong>📝 Kiểm tra (Test Mode)</strong><p>Không có công cụ hỗ trợ (từ điển, highlight...) — giống điều kiện thi thật.</p></div>
+        <div><strong>📝 Test Mode</strong><p>No support tools (dictionary, highlight...) — matches real exam conditions.</p></div>
       </label>
       <label class="time-option">
         <input type="radio" name="modeChoice" value="practice" />
-        <div><strong>📖 Luyện tập (Practice Mode)</strong><p>Có đầy đủ công cụ hỗ trợ trong lúc làm bài.</p></div>
+        <div><strong>📖 Practice Mode</strong><p>Full support tools available while you work.</p></div>
       </label>
     </div>
-    <button class="btn btn-primary btn-block" onclick="confirmModeChoice()">Tiếp tục →</button>
+    <button class="btn btn-primary btn-block" onclick="confirmModeChoice()">Continue →</button>
   </div>
 </div>
 
 <div class="modal-overlay" id="timerModal">
   <div class="modal">
     <div class="modal-header">
-      <h3>Chọn thời gian làm bài</h3>
+      <h3>Choose your time limit</h3>
       <button class="modal-close" onclick="closeTimerModal()">✕</button>
     </div>
     <div class="time-option-list">
       <label class="time-option">
         <input type="radio" name="timeChoice" value="unlimited" checked />
-        <div><strong>Unlimited</strong><p>Làm thoải mái, không đếm giờ</p></div>
+        <div><strong>Unlimited</strong><p>No time limit, take your time</p></div>
       </label>
       <label class="time-option">
         <input type="radio" name="timeChoice" value="extended" />
-        <div><strong>Extended (+20%)</strong><p>72 phút — thêm thời gian so với thi thật</p></div>
+        <div><strong>Extended (+20%)</strong><p>72 minutes — extra time compared to the real test</p></div>
       </label>
       <label class="time-option">
         <input type="radio" name="timeChoice" value="standard" />
-        <div><strong>Standard</strong><p>60 phút — giống thời gian thi thật</p></div>
+        <div><strong>Standard</strong><p>60 minutes — same as the real test</p></div>
       </label>
       <label class="time-option">
         <input type="radio" name="timeChoice" value="hardcore" />
-        <div><strong>Hardcore</strong><p>50 phút — luyện tốc độ, khắt khe hơn thi thật</p></div>
+        <div><strong>Hardcore</strong><p>50 minutes — speed training, stricter than the real test</p></div>
       </label>
     </div>
-    <button class="btn btn-primary btn-block" onclick="confirmTimerChoice()">Bắt đầu làm bài →</button>
+    <button class="btn btn-primary btn-block" onclick="confirmTimerChoice()">Start the test →</button>
   </div>
 </div>
 
@@ -220,14 +220,14 @@ function setSkillFilter(s) {
 
 async function loadExamList() {
   const listEl = document.getElementById("examList");
-  listEl.innerHTML = '<div class="empty-state">Đang tải danh sách đề thi...</div>';
+  listEl.innerHTML = '<div class="empty-state">Loading test list...</div>';
   try {
     const res = await fetch(API_URL + "/exams?skill=" + skillFilter);
     const exams = await res.json();
-    if (!res.ok) throw new Error("Không tải được danh sách");
+    if (!res.ok) throw new Error("Could not load the list");
 
     if (!exams.length) {
-      listEl.innerHTML = '<div class="empty-state">Chưa có đề thi nào trong mục này.</div>';
+      listEl.innerHTML = '<div class="empty-state">No tests available in this category yet.</div>';
       return;
     }
 
@@ -235,15 +235,15 @@ async function loadExamList() {
       <div class="doc-item">
         <div class="doc-info">
           <h4>${escapeHtml(e.title)}</h4>
-          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span> <span class="doc-tag" style="background:var(--paper);color:var(--ink-soft);">${e.is_full_test === false ? "Luyện lẻ" : "Full Test"}</span></div>
+          <div class="doc-meta"><span class="doc-tag">${e.skill === "reading" ? "Reading" : "Listening"}</span> <span class="doc-tag" style="background:var(--paper);color:var(--ink-soft);">${e.is_full_test === false ? "Practice Section" : "Full Test"}</span></div>
         </div>
         <div class="doc-actions">
-          <button class="btn btn-primary" onclick="openTimerModal('${e.id}')">Làm bài</button>
+          <button class="btn btn-primary" onclick="openTimerModal('${e.id}')">Start</button>
         </div>
       </div>
     `).join("");
   } catch (e) {
-    listEl.innerHTML = '<div class="empty-state">Lỗi: ' + escapeHtml(e.message) + '</div>';
+    listEl.innerHTML = '<div class="empty-state">Error: ' + escapeHtml(e.message) + '</div>';
   }
 }
 
@@ -286,7 +286,7 @@ async function openExam(examId, durationSeconds, mode) {
   try {
     const res = await fetch(API_URL + "/exams/" + examId);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Không tải được đề thi");
+    if (!res.ok) throw new Error(data.detail || "Could not load the test");
 
     currentExam = data.exam;
     currentQuestions = data.questions.sort((a, b) => a.question_number - b.question_number);
@@ -301,7 +301,7 @@ async function openExam(examId, durationSeconds, mode) {
 
     document.getElementById("examTitleText").textContent = currentExam.title;
     document.getElementById("examSubtitleText").textContent =
-      currentExam.skill === "reading" ? "Đọc và trả lời câu hỏi" : "Nghe và trả lời câu hỏi";
+      currentExam.skill === "reading" ? "Read and answer the questions" : "Listen and answer the questions";
 
     renderPartTabs();
     renderActivePart();
@@ -342,7 +342,7 @@ function startTimer(durationSeconds) {
     if (remainMs <= 0) {
       timerText.textContent = "00:00";
       clearInterval(timerInterval);
-      alert("Đã hết giờ làm bài! Bài làm sẽ được nộp tự động.");
+      alert("Time is up! Your test will be submitted automatically.");
       submitExam();
       return;
     }
@@ -400,10 +400,6 @@ function renderActivePart() {
     questionsSource = currentQuestions.filter(q => !q.part_id || !currentParts.length);
   }
 
-  const nums = questionsSource.map(q => q.question_number);
-  document.getElementById("questionsRangeLabel").textContent =
-    nums.length ? `Câu hỏi ${Math.min(...nums)}–${Math.max(...nums)}` : "Câu hỏi";
-
   const audioControl = document.getElementById("audioControl");
   const audioKey = activePartId || "exam";
   const alreadyPlayed = currentParts.length ? playedPartAudio.has(audioKey) : audioHasPlayed;
@@ -411,17 +407,17 @@ function renderActivePart() {
   if (currentExam.skill === "listening") {
     audioControl.style.display = "block";
     document.getElementById("playAudioBtn").disabled = alreadyPlayed;
-    document.getElementById("playAudioBtn").textContent = alreadyPlayed ? "✓ Đã nghe" : "▶ Nghe (1 lần)";
-    document.getElementById("audioStatusText").textContent = alreadyPlayed ? "Đã phát xong — không thể nghe lại." : "";
-    document.getElementById("passageLabel").textContent = "(Transcript sẽ hiện sau khi nộp bài)";
+    document.getElementById("playAudioBtn").textContent = alreadyPlayed ? "✓ Played" : "▶ Listen (once)";
+    document.getElementById("audioStatusText").textContent = alreadyPlayed ? "Already played — cannot replay." : "";
+    document.getElementById("passageLabel").textContent = "(Transcript will appear after submission)";
     const audioEl = document.getElementById("examAudioEl");
     audioEl.src = audioSource || "";
     audioEl.onended = () => {
       playedPartAudio.add(audioKey);
       audioHasPlayed = true;
-      document.getElementById("audioStatusText").textContent = "Đã phát xong — không thể nghe lại.";
+      document.getElementById("audioStatusText").textContent = "Already played — cannot replay.";
       document.getElementById("playAudioBtn").disabled = true;
-      document.getElementById("playAudioBtn").textContent = "✓ Đã nghe";
+      document.getElementById("playAudioBtn").textContent = "✓ Played";
     };
   } else {
     audioControl.style.display = "none";
@@ -437,12 +433,12 @@ function playAudioOnce() {
   if (currentParts.length ? playedPartAudio.has(audioKey) : audioHasPlayed) return;
   const audioEl = document.getElementById("examAudioEl");
   if (!audioEl.src) {
-    document.getElementById("audioStatusText").textContent = "Phần này chưa có file âm thanh.";
+    document.getElementById("audioStatusText").textContent = "No audio file for this part yet.";
     return;
   }
   document.getElementById("playAudioBtn").disabled = true;
-  document.getElementById("playAudioBtn").textContent = "🔊 Đang phát...";
-  document.getElementById("audioStatusText").textContent = "Đang phát — nghe kỹ, sẽ không phát lại được.";
+  document.getElementById("playAudioBtn").textContent = "🔊 Playing...";
+  document.getElementById("audioStatusText").textContent = "Now playing — listen carefully, it will not replay.";
   audioEl.play();
 }
 
@@ -482,7 +478,7 @@ function renderPassageAndQuestions(rawPassage, groupsSource, questionsSource) {
       return part; // KHONG escape - day la HTML that tu rich-text editor cua admin (co the chua the <p>, <b>...)
     }).join("");
   } else if (!isReading) {
-    passageHtml = '<p style="color:var(--ink-soft);text-align:center;padding:40px 20px;">🎧 Nghe kỹ bài audio ở nút "Nghe (1 lần)" phía trên.<br/>Transcript sẽ hiện ra ở đây sau khi bạn nộp bài.</p>';
+    passageHtml = '<p style="color:var(--ink-soft);text-align:center;padding:40px 20px;">🎧 Listen carefully using the "Listen (once)" button above.<br/>The transcript will appear here after you submit.</p>';
   }
   document.getElementById("passageCard").style.display = (isReading || !isReading) ? "block" : "none";
   document.getElementById("passageRendered").innerHTML = passageHtml;
@@ -574,7 +570,7 @@ function groupStandaloneQuestions(qs) {
 
 function flagButtonHtml(qid) {
   const isFlagged = flaggedQuestions.has(qid);
-  return `<button type="button" id="flagbtn_${qid}" class="flag-btn ${isFlagged ? "flagged" : ""}" onclick="toggleFlag('${qid}')" title="Đánh dấu xem lại">🚩</button>`;
+  return `<button type="button" id="flagbtn_${qid}" class="flag-btn ${isFlagged ? "flagged" : ""}" onclick="toggleFlag('${qid}')" title="Flag for review">🚩</button>`;
 }
 
 function renderGroup(g) {
@@ -584,7 +580,7 @@ function renderGroup(g) {
     const first = qs[0].question_number, last = qs[qs.length - 1].question_number;
     return `
       <div class="card matching-table-card" id="qcard_group_${first}_${last}">
-        <div class="card-label">Câu ${first}–${last}</div>
+        
         <div class="matching-table-wrap">
           <table class="matching-table">
             <thead><tr><th></th>${opts.map(o => `<th>${escapeHtml(o)}</th>`).join("")}<th></th></tr></thead>
@@ -621,7 +617,7 @@ function renderGroup(g) {
           `).join("")}
         </div>
       ` : `
-        <input type="text" class="q-short-answer" placeholder="Nhập câu trả lời..." oninput="inputChanged('${q.id}', this.value)" />
+        <input type="text" class="q-short-answer" placeholder="Type your answer here" oninput="inputChanged('${q.id}', this.value)" />
       `}
     </div>
   `;
@@ -634,7 +630,7 @@ function toggleNavPills() {
   const collapsed = navbar.classList.toggle("pills-collapsed");
   wrap.classList.toggle("collapsed", collapsed);
   btn.textContent = collapsed ? "▸" : "▾";
-  btn.title = collapsed ? "Hiện danh sách câu hỏi" : "Ẩn danh sách câu hỏi";
+  btn.title = collapsed ? "Show question list" : "Hide question list";
 }
 
 function renderNavPills() {
@@ -681,7 +677,7 @@ async function submitExam() {
       body: JSON.stringify({ answers }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Nộp bài thất bại");
+    if (!res.ok) throw new Error(data.detail || "Submission failed");
 
     showResult(data);
   } catch (e) {
@@ -721,11 +717,11 @@ function showResult(data) {
     if (band === null) {
       bandBlock.textContent = "—";
       bandNote.textContent = data.total === 40
-        ? "Dưới 3 câu đúng — chưa có band tương ứng trong thang điểm chính thức"
-        : `Đề này có ${data.total} câu (không phải 40) nên không quy đổi được ra band chính xác`;
+        ? "Fewer than 3 correct answers — no corresponding band in the official scale"
+        : `This test has ${data.total} questions (not 40), so an exact band score cannot be calculated`;
     } else {
       bandBlock.textContent = band.toFixed(1);
-      bandNote.textContent = "Quy đổi theo đúng thang điểm IELTS chính thức (40 câu)";
+      bandNote.textContent = "Converted using the official IELTS band scale (40 questions)";
     }
   }
 
@@ -746,7 +742,7 @@ function showResult(data) {
   document.getElementById("resultGrid").innerHTML = data.results.map(r => `
     <button type="button" class="result-cell ${r.is_correct ? "correct" : "incorrect"}"
             onclick="${r.is_correct ? "" : `scrollToMistake('${r.question_id}')`}"
-            title="Câu ${r.question_number}${r.is_correct ? " — đúng" : " — sai, bấm để xem chi tiết"}">
+            title="Question ${r.question_number}${r.is_correct ? " — correct" : " — incorrect, click for details"}">
       ${r.question_number}
     </button>
   `).join("");
@@ -755,23 +751,23 @@ function showResult(data) {
   const mistakes = data.results.filter(r => !r.is_correct);
   const mistakesWrap = document.getElementById("resultMistakes");
   if (!mistakes.length) {
-    mistakesWrap.innerHTML = '<p style="color:var(--green-700);text-align:center;padding:24px;font-weight:600;">🎉 Không sai câu nào cả!</p>';
+    mistakesWrap.innerHTML = '<p style="color:var(--green-700);text-align:center;padding:24px;font-weight:600;">🎉 No mistakes at all!</p>';
   } else {
     mistakesWrap.innerHTML = mistakes.map(r => `
       <div class="mistake-card" id="mistake_${r.question_id}">
         <div class="criterion-header">
-          <span class="criterion-name">Câu ${r.question_number}${r.section_label ? " · " + escapeHtml(r.section_label) : ""}</span>
+          <span class="criterion-name">Question ${r.question_number}${r.section_label ? " · " + escapeHtml(r.section_label) : ""}</span>
           <span style="font-size:1.1rem;">❌</span>
         </div>
         <p style="margin:8px 0 12px;color:var(--ink);">${escapeHtml(r.question_text || "")}</p>
         <div class="answer-compare">
-          <div class="your-answer-wrong">${escapeHtml(r.your_answer || "(bỏ trống)")}</div>
+          <div class="your-answer-wrong">${escapeHtml(r.your_answer || "(left blank)")}</div>
           <span class="answer-arrow">→</span>
           <div class="correct-answer-box">${escapeHtml(r.correct_answer)}</div>
         </div>
         ${r.explanation ? `
           <button class="btn btn-ghost explain-toggle" onclick="toggleExplanation('${r.question_id}')" style="margin-top:12px;font-size:0.8rem;padding:6px 14px;">
-            💡 Xem giải thích
+            💡 View explanation
           </button>
           <div class="explanation-box" id="explain_${r.question_id}" style="display:none;">${escapeHtml(r.explanation)}</div>
         ` : ""}
@@ -783,7 +779,7 @@ function showResult(data) {
     document.getElementById("resultTranscriptCard").style.display = "block";
     const fullTranscript = currentParts.length
       ? currentParts.map(p => `--- ${p.title || "Part " + p.part_number} ---\n${p.passage_text || ""}`).join("\n\n")
-      : (currentExam.passage_text || "(Không có transcript)");
+      : (currentExam.passage_text || "(No transcript available)");
     document.getElementById("resultTranscriptBody").textContent = fullTranscript;
     if (window.renderKeyVocab) {
       renderKeyVocab("resultKeyVocabContainer", "listening_transcript", currentExam.id, fullTranscript);
